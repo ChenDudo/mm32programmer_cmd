@@ -11,7 +11,7 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
-class Ui_Programmer(object):
+class program_ui(object):
     def setupUi(self, Programmer):
         Programmer.setObjectName("Programmer")
         Programmer.resize(674, 637)
@@ -392,4 +392,4 @@ class Ui_Programmer(object):
 "* 如果遇到软件闪退之后无法连接,可以关闭软件,然后打开任务管理器,关闭openocd.exe.然后重新打开软件.\n"
 ""))
         self.pgb.setFormat(_translate("Programmer", "Download: %p%"))
-from led import Led
+# from led import Led
