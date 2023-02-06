@@ -1,3 +1,13 @@
+# !/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+@File    :   main.py
+@Time    :   2023/02/06 21:13:51
+@Author  :   Chen Do
+@Version :   1.0
+@Desc    :   None
+"""
+
 import sys
 from PyQt5.QtWidgets import QApplication,QMainWindow
 from PyQt5 import uic
