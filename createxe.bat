@@ -1,1 +1,0 @@
-pyinstaller -F -w -i .\icon\MM32_Logo.ico .\main.py --noconsole

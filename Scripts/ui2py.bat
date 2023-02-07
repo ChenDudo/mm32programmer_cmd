@@ -1,0 +1,1 @@
+pyuic5 -o .\mm32_ui.py .\UI\mm32_ui.ui
