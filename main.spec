@@ -8,8 +8,8 @@ py_files = [
 ]
 
 add_files = [
-    ('.\\icon\\product.ico', 'icon'),
-    ('.\\icon\\MM32_Logo.ico', 'icon'),
+    ('.\\icon\\product.ico', 'icon1'),
+    ('.\\icon\\MM32_Logo.ico', 'icon2'),
     ('.\\UI\\mm32_ui.ui', 'UI'),
 ]
 

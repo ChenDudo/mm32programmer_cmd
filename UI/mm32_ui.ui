@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>800</width>
-    <height>607</height>
+    <height>610</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -15,7 +15,7 @@
   </property>
   <property name="windowIcon">
    <iconset>
-    <normaloff>../icon/product.ico</normaloff>../icon/product.ico</iconset>
+    <normaloff>../icon/MM32_Logo.ico</normaloff>../icon/MM32_Logo.ico</iconset>
   </property>
   <widget class="QWidget" name="centralWidget">
    <property name="styleSheet">
@@ -64,6 +64,11 @@
              <widget class="QComboBox" name="cbbFreq">
               <item>
                <property name="text">
+                <string>20MHz</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
                 <string>10MHz</string>
                </property>
               </item>
@@ -100,21 +105,6 @@
               <item>
                <property name="text">
                 <string>50KHz</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>20KHz</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>10KHz</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>5KHz</string>
                </property>
               </item>
              </widget>
@@ -194,19 +184,6 @@
               </property>
              </widget>
             </item>
-            <item row="0" column="3">
-             <widget class="QToolButton" name="btnReflash">
-              <property name="styleSheet">
-               <string notr="true"/>
-              </property>
-              <property name="text">
-               <string>刷新</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="2">
-             <widget class="QComboBox" name="cbbSerialNumber"/>
-            </item>
             <item row="3" column="0">
              <widget class="QLabel" name="label_4">
               <property name="text">
@@ -253,6 +230,9 @@
                </property>
               </item>
              </widget>
+            </item>
+            <item row="0" column="2" colspan="2">
+             <widget class="QComboBox" name="cbbSerialNumber"/>
             </item>
            </layout>
           </widget>
@@ -589,12 +569,37 @@
         <property name="spacing">
          <number>0</number>
         </property>
+        <item row="0" column="0" rowspan="8">
+         <widget class="QPlainTextEdit" name="txtLog">
+          <property name="acceptDrops">
+           <bool>false</bool>
+          </property>
+          <property name="plainText">
+           <string>* 成功连接目标芯片之后如果无法下载程序,可以尝试适当的调低时钟频率上限.
+* 如果遇到软件闪退之后无法连接,可以关闭软件,然后打开任务管理器,关闭openocd.exe.然后重新打开软件.
+</string>
+          </property>
+         </widget>
+        </item>
         <item row="0" column="1">
          <widget class="QPushButton" name="btnClearLog">
           <property name="text">
            <string>Clear</string>
           </property>
          </widget>
+        </item>
+        <item row="3" column="1">
+         <spacer name="verticalSpacer_4">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
         </item>
         <item row="4" column="1">
          <widget class="QPushButton" name="btnUnlock">
@@ -605,46 +610,6 @@
         </item>
         <item row="7" column="1">
          <spacer name="verticalSpacer_2">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>40</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-        <item row="2" column="1">
-         <widget class="QPushButton" name="btnFullErase">
-          <property name="text">
-           <string>Full Erase</string>
-          </property>
-         </widget>
-        </item>
-        <item row="6" column="1">
-         <widget class="QPushButton" name="btnLock">
-          <property name="text">
-           <string> lock</string>
-          </property>
-         </widget>
-        </item>
-        <item row="5" column="1">
-         <spacer name="verticalSpacer_3">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>40</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-        <item row="3" column="1">
-         <spacer name="verticalSpacer_4">
           <property name="orientation">
            <enum>Qt::Vertical</enum>
           </property>
@@ -669,15 +634,30 @@
           </property>
          </spacer>
         </item>
-        <item row="0" column="0" rowspan="8">
-         <widget class="QPlainTextEdit" name="txtLog">
-          <property name="acceptDrops">
-           <bool>false</bool>
+        <item row="2" column="1">
+         <widget class="QPushButton" name="btnFullErase">
+          <property name="text">
+           <string>Full Erase</string>
           </property>
-          <property name="plainText">
-           <string>* 成功连接目标芯片之后如果无法下载程序,可以尝试适当的调低时钟频率上限.
-* 如果遇到软件闪退之后无法连接,可以关闭软件,然后打开任务管理器,关闭openocd.exe.然后重新打开软件.
-</string>
+         </widget>
+        </item>
+        <item row="5" column="1">
+         <spacer name="verticalSpacer_3">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item row="6" column="1">
+         <widget class="QPushButton" name="btnLock">
+          <property name="text">
+           <string> lock</string>
           </property>
          </widget>
         </item>
@@ -712,7 +692,6 @@
  <layoutdefault spacing="6" margin="11"/>
  <tabstops>
   <tabstop>cbbSerialNumber</tabstop>
-  <tabstop>btnReflash</tabstop>
   <tabstop>cbbPort</tabstop>
   <tabstop>cbbFreq</tabstop>
   <tabstop>cbbResetMode</tabstop>
@@ -745,8 +724,8 @@
    <slot>clear()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>661</x>
-     <y>503</y>
+     <x>784</x>
+     <y>479</y>
     </hint>
     <hint type="destinationlabel">
      <x>518</x>
