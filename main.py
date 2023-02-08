@@ -12,7 +12,15 @@ import sys
 import collections
 import configparser
 
-from PyQt5.QtWidgets import QApplication,QMainWindow,QMessageBox
+import device
+
+from source.xlink import XLink
+
+from mm32_ui import Ui_Programmer
+from pyocd.probe import aggregator
+from pyocd.coresight import dap, ap, cortex_m
+
+from PyQt5.QtWidgets import QApplication,QMainWindow,QMessageBox,QFileDialog
 from PyQt5 import QtCore,uic
 from PyQt5.QtCore import pyqtSlot, pyqtSignal, QThread
 
@@ -29,59 +37,11 @@ class ThreadAsync(QThread):
             pass
         self.taskFinished.emit()
 
-
 def show_message():
-    msg_box = QMessageBox(QMessageBox.Warning, 'Warning', 'Comming soon ...')
+    msg_box = QMessageBox(QMessageBox.Warning, 'Warning', 'Comming soon ...', QMessageBox.Yes)
     msg_box.exec_()
 
-# interface 
-## Tool button
-def app_btn_refresh_clicked():
-    # show_message()
-    print("helllo")
-    pass
-
-## Push button
-def app_btn_DeviceConnect_clicked():
-    show_message()
-    print("app_btn_DeviceConnect_clicked")
-    pass
-
-def app_btn_fullErase_clicked():
-    show_message()
-    print("app_btn_fullErase_clicked")
-    pass
-
-def app_btn_lock_clicked():
-    show_message()
-    print("app_btn_lock_clicked")
-    pass
-
-def app_btn_unlock_clicked():
-    show_message()
-    print("app_btn_unlock_clicked")
-    pass
-
-def app_btn_download_clicked():
-    show_message()
-    print("app_btn_download_clicked")
-    pass
-
-def app_btn_netDownload_cliked():
-    show_message()
-    print("app_btn_netDownload_cliked")
-    pass
-
-def app_btn_open_clicked():
-    show_message()
-    print("app_btn_open_clicked")
-    pass
-
-
 """ static loading """
-from mm32_ui import Ui_Programmer
-from pyocd.probe import aggregator
-from pyocd.coresight import dap, ap, cortex_m
 class mainwindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -108,26 +68,30 @@ class mainwindow(QMainWindow):
             self.conf.set('globals', 'Freq', '10MHz')
             self.conf.set('globals', 'ResetMode', 'HW RESET')
             self.conf.set('globals', 'link', '')
-            # self.conf.set('globals', 'dllpath', '')
+            self.conf.set('globals', 'mcu', 'MM32F0140')
+            self.conf.set('globals', 'addr', '0 K')
+            self.conf.set('globals', 'size', '64 K')
+            self.conf.set('globals', 'hexpath', '[]')
         
         self.ui.cbbPort.setCurrentIndex(self.ui.cbbPort.findText(self.conf.get('globals','DebugPort')))
         self.ui.cbbFreq.setCurrentIndex(self.ui.cbbFreq.findText(self.conf.get('globals', 'Freq')))
         self.ui.cbbResetMode.setCurrentIndex(self.ui.cbbResetMode.findText(self.conf.get('globals', 'ResetMode')))
-        self.ui.cbbSerialNumber.addItem(" ")
+        self.ui.cbbSerialNumber.setCurrentIndex(self.ui.cbbSerialNumber.findText(self.conf.get('globals', 'link')))
+        self.ui.cmbMCU.addItems(device.Devices.keys())
+        self.ui.cmbMCU.setCurrentIndex(self.ui.cmbMCU.findText(self.conf.get('globals', 'mcu')))
+        self.ui.cmbAddr.setCurrentIndex(self.ui.cmbAddr.findText(self.conf.get('globals', 'addr')))
+        self.ui.cmbSize.setCurrentIndex(self.ui.cmbSize.findText(self.conf.get('globals', 'size')))
+        self.ui.cmbHEX.addItems(eval(self.conf.get('globals', 'hexpath')))
+
         self.on_tmrDAP_timeout()
-
-        index = self.ui.cbbSerialNumber.findText(self.conf.get('globals', 'link'))
-        self.ui.cbbSerialNumber.setCurrentIndex(index if index != -1 else 0)
-
-        # self.ui.btnReflash.clicked.connect(app_btn_refresh_clicked)
-        self.ui.btnDeviceConnect.clicked.connect(app_btn_DeviceConnect_clicked)
-        self.ui.btnFullErase.clicked.connect(app_btn_fullErase_clicked)
-        self.ui.btnLock.clicked.connect(app_btn_lock_clicked)
-        self.ui.btnUnlock.clicked.connect(app_btn_unlock_clicked)
-        self.ui.btnDownload.clicked.connect(app_btn_download_clicked)
-        self.ui.btnNetDownload.clicked.connect(app_btn_netDownload_cliked)
-        self.ui.btnOpen.clicked.connect(app_btn_open_clicked)
         
+        # self.ui.btnReflash.clicked.connect(app_btn_refresh_clicked)
+        # self.ui.btnDeviceConnect.clicked.connect(app_btn_DeviceConnect_clicked)
+        # self.ui.btnFullErase.clicked.connect(app_btn_fullErase_clicked)
+        # self.ui.btnLock.clicked.connect(app_btn_lock_clicked)
+        # self.ui.btnUnlock.clicked.connect(app_btn_unlock_clicked)
+        # self.ui.btnDownload.clicked.connect(app_btn_download_clicked)
+        # self.ui.btnOpen.clicked.connect(app_btn_open_clicked)
 
     def on_tmrDAP_timeout(self):
         if not self.isEnabled():    # link working
@@ -135,36 +99,72 @@ class mainwindow(QMainWindow):
         try:
             from pyocd.probe import aggregator
             self.daplinks = aggregator.DebugProbeAggregator.get_all_connected_probes()
-            if len(self.daplinks) != self.ui.cbbSerialNumber.count() - 1:
-                for i in range(1, self.ui.cbbSerialNumber.count()):
-                    self.ui.cbbSerialNumber.removeItem(i)
-                    self.ui.lblFWVersion.setText("")
-                for i, daplink in enumerate(self.daplinks):
-                    self.ui.cbbSerialNumber.addItem(daplink.product_name[:7]+" No."+daplink.unique_id[3:11])
-                    self.ui.lblFWVersion.setText(daplink.unique_id)
+            if len(self.daplinks) != self.ui.cbbSerialNumber.count():
+                self.ui.cbbSerialNumber.clear()
+                for i,daplink in enumerate(self.daplinks):
+                    print(i, daplink.unique_id)
+                    if (daplink.unique_id[:3] == '088'):
+                        showname = "MM32LINK " + daplink.unique_id[:3] + "_" + daplink.unique_id[7:11] + " " + daplink.product_name[6:7]
+                    elif (daplink.unique_id[:3] == '059'):
+                        showname = "MM32LINK " + daplink.unique_id[:3] + "_" + daplink.unique_id[7:11] + " " + daplink.product_name[6:7]
+                    else:
+                        showname = "unknown" + daplink.unique_id[7:11]
+                    self.ui.cbbSerialNumber.addItem(showname)
         except Exception as e:
-            # self.cmbDLL.close()
+            self.ui.cbbSerialNumber.close()
             pass
 
+    def logOutput(self, text):
+        self.ui.txtLog.appendPlainText(text)
+
+    @pyqtSlot()
+    def on_btnDeviceConnect_clicked(self):
+        self.logOutput("Device Connect clicked.")
+        print("device connect clicked")
+        self.connect()
+
+    @property
+    def addr(self):
+        return int(self.ui.cmbAddr.currentText().split()[0]) * 1024
+
+    @property
+    def size(self):
+        return int(self.ui.cmbSize.currentText().split()[0]) * 1024
+
+    @pyqtSlot(str)
+    def on_cmbMCU_currentIndexChanged(self, str):
+        dev = device.Devices[self.ui.cmbMCU.currentText()]
+
+        self.ui.cmbAddr.clear()
+        self.ui.cmbSize.clear()
+        for i in range(dev.CHIP_SIZE//dev.SECT_SIZE):
+            if (dev.SECT_SIZE * i) % 1024 == 0:
+                self.ui.cmbAddr.addItem('%d K'  %(dev.SECT_SIZE * i    // 1024))
+            if (dev.SECT_SIZE * (i+1)) % 1024 == 0:
+                self.ui.cmbSize.addItem('%d K' %(dev.SECT_SIZE * (i+1) // 1024))
+
+        self.ui.cmbAddr.setCurrentIndex(self.ui.cmbAddr.findText(self.conf.get('globals', 'addr')))
+        self.ui.cmbSize.setCurrentIndex(self.ui.cmbSize.findText(self.conf.get('globals', 'size')))
+
+    @pyqtSlot()
+    def on_btnOpen_clicked(self):
+        hexpath, filter = QFileDialog.getOpenFileName(caption='Image file path', filter='Image File (*.bin *.hex)', directory=self.ui.cmbHEX.currentText())
+        if hexpath:
+            self.ui.cmbHEX.insertItem(0, hexpath)
+            self.ui.cmbHEX.setCurrentIndex(0)
+            
     def connect(self):
         try:
-            if self.cmbDLL.currentIndex() == 0:
-                self.xlk = xlink.XLink(jlink.JLink(self.cmbDLL.currentText(), device.Devices[self.cmbMCU.currentText()].CHIP_CORE))
-
-            else:
-                from pyocd.coresight import dap, ap, cortex_m
-                daplink = self.daplinks[self.cmbDLL.currentIndex() - 1]
-                daplink.open()
-
-                _dp = dap.DebugPort(daplink, None)
-                _dp.init()
-                _dp.power_up_debug()
-
-                _ap = ap.AHB_AP(_dp, 0)
-                _ap.init()
-
-                self.xlk = xlink.XLink(cortex_m.CortexM(None, _ap))
-            self.dev = device.Devices[self.cmbMCU.currentText()](self.xlk)
+            from pyocd.coresight import dap, ap, cortex_m
+            daplink = self.daplinks[self.ui.cbbSerialNumber.currentIndex() - 1]
+            daplink.open()
+            _dp = dap.DebugPort(daplink, None)
+            _dp.init()
+            _dp.power_up_debug()
+            _ap = ap.AHB_AP(_dp, 0)
+            _ap.init()
+            self.xlk = XLink(cortex_m.CortexM(None, _ap))
+            self.dev = device.Devices[1](self.xlk)
         except Exception as e:
             daplink.close()
             QMessageBox.critical(self, 'Connect Failed', 'Connect Failed\n' + str(e), QMessageBox.Yes)
