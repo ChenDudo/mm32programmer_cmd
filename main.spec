@@ -5,6 +5,8 @@ block_cipher = None
 
 py_files = [
     'main.py',
+    'jlink.py',
+    'xlink.py'
 ]
 
 add_files = [

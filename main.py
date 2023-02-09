@@ -13,16 +13,16 @@ import collections
 import configparser
 
 import device
+import xlink
 
-from source.xlink import XLink
-
-from mm32_ui import Ui_Programmer
 from pyocd.probe import aggregator
 from pyocd.coresight import dap, ap, cortex_m
 
 from PyQt5.QtWidgets import QApplication,QMainWindow,QMessageBox,QFileDialog
 from PyQt5 import QtCore,uic
 from PyQt5.QtCore import pyqtSlot, pyqtSignal, QThread
+
+os.environ['PATH'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'libusb-1.0.24/MinGW64/dll') + os.pathsep + os.environ['PATH']
 
 class ThreadAsync(QThread):
     taskFinished = pyqtSignal()
@@ -37,11 +37,53 @@ class ThreadAsync(QThread):
             pass
         self.taskFinished.emit()
 
+def parseHex(file):
+    ''' Parse the .hex file, extract the program code, and populate the 0xFF where there are no values '''
+    data = ''
+    currentAddr = 0
+    extSegAddr  = 0     # 扩展段地址
+    for line in open(file, 'rb').readlines():
+        line = line.strip()
+        if len(line) == 0: continue
+
+        len_ = int(line[1:3],16)
+        addr = int(line[3:7],16) + extSegAddr
+        type = int(line[7:9],16)
+        if type == 0x00:
+            if currentAddr != addr:
+                if currentAddr != 0:
+                    data += '\xFF' * (addr - currentAddr)
+                currentAddr = addr
+            for i in range(len_):
+                data += chr(int(line[9+2*i:11+2*i], 16))
+            currentAddr += len_
+        elif type == 0x02:
+            extSegAddr = int(line[9:9+4], 16) * 16
+        elif type == 0x04:
+            extSegAddr = int(line[9:9+4], 16) * 65536
+    return data.encode('latin')
+
 def show_message():
     msg_box = QMessageBox(QMessageBox.Warning, 'Warning', 'Comming soon ...', QMessageBox.Yes)
     msg_box.exec_()
 
+# """ dynamic loading """
+# def get_path():
+#     if getattr(sys, 'frozen', False):
+#         application_path = sys._MEIPASS
+#     else:
+#         application_path = os.path.dirname(os.path.abspath(__file__))
+#     return application_path
+#     # return os.path.realpath(os.path.dirname(sys.argv[0]))
+
+# class mainwindow(QMainWindow):
+#     def __init__(self):
+#         super(mainwindow, self).__init__()
+#         self.ui=uic.loadUi(get_path()+"\\UI\\mm32_ui.ui")
+
 """ static loading """
+
+from mm32_ui import Ui_Programmer
 class mainwindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -103,12 +145,11 @@ class mainwindow(QMainWindow):
                 self.ui.cbbSerialNumber.clear()
                 for i,daplink in enumerate(self.daplinks):
                     print(i, daplink.unique_id)
-                    if (daplink.unique_id[:3] == '088'):
-                        showname = "MM32LINK " + daplink.unique_id[:3] + "_" + daplink.unique_id[7:11] + " " + daplink.product_name[6:7]
-                    elif (daplink.unique_id[:3] == '059'):
-                        showname = "MM32LINK " + daplink.unique_id[:3] + "_" + daplink.unique_id[7:11] + " " + daplink.product_name[6:7]
+                    if (daplink.product_name[:4] == 'MM32'):
+                        debuggername = "MM32LINK "
                     else:
-                        showname = "unknown" + daplink.unique_id[7:11]
+                        debuggername = "UNKNOWN  "
+                    showname = debuggername + daplink.unique_id[:3] + "_" + daplink.unique_id[7:11] + " " + daplink.product_name[5:7]
                     self.ui.cbbSerialNumber.addItem(showname)
         except Exception as e:
             self.ui.cbbSerialNumber.close()
@@ -119,8 +160,8 @@ class mainwindow(QMainWindow):
 
     @pyqtSlot()
     def on_btnDeviceConnect_clicked(self):
-        self.logOutput("Device Connect clicked.")
-        print("device connect clicked")
+        # self.logOutput("Device Connect clicked.")
+        print("[info]:\tDevice connecting ...")
         self.connect()
 
     @property
@@ -156,16 +197,18 @@ class mainwindow(QMainWindow):
     def connect(self):
         try:
             from pyocd.coresight import dap, ap, cortex_m
-            daplink = self.daplinks[self.ui.cbbSerialNumber.currentIndex() - 1]
+            daplink = self.daplinks[self.ui.cbbSerialNumber.currentIndex()]
             daplink.open()
             _dp = dap.DebugPort(daplink, None)
             _dp.init()
             _dp.power_up_debug()
             _ap = ap.AHB_AP(_dp, 0)
             _ap.init()
-            self.xlk = XLink(cortex_m.CortexM(None, _ap))
-            self.dev = device.Devices[1](self.xlk)
+            self.xlk = xlink.XLink(cortex_m.CortexM(None, _ap))
+
+            # self.dev = device.Devices[self.ui.cmbMCU.currentText()](self.xlk)
         except Exception as e:
+            print("[Err]:\tConnect Failed")
             daplink.close()
             QMessageBox.critical(self, 'Connect Failed', 'Connect Failed\n' + str(e), QMessageBox.Yes)
             return False
@@ -177,25 +220,9 @@ class mainwindow(QMainWindow):
         self.conf.set('globals', 'ResetMode', self.ui.cbbResetMode.currentText())
         self.conf.set('globals', 'link', self.ui.cbbSerialNumber.currentText())
         # self.conf.set('globals', 'dllpath', self.ui.cbbSerialNumber.itemText(0))
-        # hexpath = [self.cmbHEX.currentText()] + [self.cmbHEX.itemText(i) for i in range(self.cmbHEX.count())]
-        # self.conf.set('globals', 'hexpath', repr(list(collections.OrderedDict.fromkeys(hexpath))))    # 保留顺序去重
+        hexpath = [self.ui.cmbHEX.currentText()] + [self.ui.cmbHEX.itemText(i) for i in range(self.ui.cmbHEX.count())]
+        self.conf.set('globals', 'hexpath', repr(list(collections.OrderedDict.fromkeys(hexpath))))    # 保留顺序去重
         self.conf.write(open('setting.ini', 'w', encoding='utf-8'))
-
-
-# """ dynamic loading """
-# def get_path():
-#     if getattr(sys, 'frozen', False):
-#         application_path = sys._MEIPASS
-#     else:
-#         application_path = os.path.dirname(os.path.abspath(__file__))
-#     return application_path
-#     # return os.path.realpath(os.path.dirname(sys.argv[0]))
-
-# class mainwindow(QMainWindow):
-#     def __init__(self):
-#         super(mainwindow, self).__init__()
-#         self.ui=uic.loadUi(get_path()+"\\UI\\mm32_ui.ui")
-#         self.ui.show()
     
 
 if __name__=="__main__":
