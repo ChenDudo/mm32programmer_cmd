@@ -22,7 +22,18 @@ from PyQt5.QtWidgets import QApplication,QMainWindow,QMessageBox,QFileDialog
 from PyQt5 import QtCore,uic
 from PyQt5.QtCore import pyqtSlot, pyqtSignal, QThread
 
-os.environ['PATH'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'libusb-1.0.24/MinGW64/dll') + os.pathsep + os.environ['PATH']
+# os.environ['PATH'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'libusb-1.0.24/MinGW64/dll') + os.pathsep + os.environ['PATH']
+
+'''
+""" static loading """
+
+from mm32_ui import Ui_Programmer
+class mainwindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.ui=Ui_Programmer()
+        self.ui.setupUi(self)
+'''
 
 class ThreadAsync(QThread):
     taskFinished = pyqtSignal()
@@ -67,29 +78,20 @@ def show_message():
     msg_box = QMessageBox(QMessageBox.Warning, 'Warning', 'Comming soon ...', QMessageBox.Yes)
     msg_box.exec_()
 
-# """ dynamic loading """
-# def get_path():
-#     if getattr(sys, 'frozen', False):
-#         application_path = sys._MEIPASS
-#     else:
-#         application_path = os.path.dirname(os.path.abspath(__file__))
-#     return application_path
-#     # return os.path.realpath(os.path.dirname(sys.argv[0]))
+""" dynamic loading """
+def get_path():
+    if getattr(sys, 'frozen', False):
+        application_path = sys._MEIPASS
+    else:
+        application_path = os.path.dirname(os.path.abspath(__file__))
+    return application_path
+    # return os.path.realpath(os.path.dirname(sys.argv[0]))
 
-# class mainwindow(QMainWindow):
-#     def __init__(self):
-#         super(mainwindow, self).__init__()
-#         self.ui=uic.loadUi(get_path()+"\\UI\\mm32_ui.ui")
-
-""" static loading """
-
-from mm32_ui import Ui_Programmer
 class mainwindow(QMainWindow):
     def __init__(self):
-        super().__init__()
-        self.ui=Ui_Programmer()
-        self.ui.setupUi(self)
-
+        super(mainwindow, self).__init__()
+        self.ui=uic.loadUi(get_path()+"\\UI\\mm32_ui.ui")
+        self.ui.show()
         self.setMyUi()
 
         self.tmrDAP = QtCore.QTimer()
@@ -223,10 +225,8 @@ class mainwindow(QMainWindow):
         hexpath = [self.ui.cmbHEX.currentText()] + [self.ui.cmbHEX.itemText(i) for i in range(self.ui.cmbHEX.count())]
         self.conf.set('globals', 'hexpath', repr(list(collections.OrderedDict.fromkeys(hexpath))))    # 保留顺序去重
         self.conf.write(open('setting.ini', 'w', encoding='utf-8'))
-    
 
 if __name__=="__main__":
     app=QApplication(sys.argv)
     window=mainwindow()
-    window.show()
     sys.exit(app.exec_())

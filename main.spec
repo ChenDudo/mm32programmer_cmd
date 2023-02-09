@@ -10,8 +10,8 @@ py_files = [
 ]
 
 add_files = [
-    ('.\\icon\\product.ico', 'icon1'),
-    ('.\\icon\\MM32_Logo.ico', 'icon2'),
+    ('.\\icon\\product.ico', 'icon'),
+    ('.\\icon\\MM32_Logo.ico', 'icon'),
     ('.\\UI\\mm32_ui.ui', 'UI'),
 ]
 
@@ -52,5 +52,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='.\\icon\\product.ico'
+    icon='.\\icon\\MM32_Logo.ico'
 )

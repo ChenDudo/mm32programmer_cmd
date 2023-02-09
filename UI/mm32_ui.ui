@@ -15,7 +15,7 @@
   </property>
   <property name="windowIcon">
    <iconset>
-    <normaloff>../icon/MM32_Logo.ico</normaloff>../icon/MM32_Logo.ico</iconset>
+    <normaloff>../icon/product.ico</normaloff>../icon/product.ico</iconset>
   </property>
   <widget class="QWidget" name="centralWidget">
    <property name="styleSheet">
