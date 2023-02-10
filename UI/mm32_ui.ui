@@ -22,16 +22,6 @@
     <string notr="true"/>
    </property>
    <layout class="QGridLayout" name="gridLayout_6">
-    <item row="1" column="0">
-     <widget class="QProgressBar" name="pgb">
-      <property name="value">
-       <number>0</number>
-      </property>
-      <property name="format">
-       <string>Download: %p%</string>
-      </property>
-     </widget>
-    </item>
     <item row="0" column="0">
      <widget class="QSplitter" name="splitter_2">
       <property name="orientation">
@@ -132,98 +122,11 @@
             <property name="topMargin">
              <number>10</number>
             </property>
-            <item row="5" column="0" colspan="4">
-             <widget class="QCheckBox" name="ckbRunAfterProg">
-              <property name="text">
-               <string>下载后运行</string>
-              </property>
-             </widget>
-            </item>
-            <item row="9" column="2" colspan="2">
-             <widget class="QPushButton" name="btnDeviceConnect">
-              <property name="toolTip">
-               <string>Enter</string>
-              </property>
-              <property name="text">
-               <string>Device Connect(&amp;Enter)</string>
-              </property>
-              <property name="shortcut">
-               <string>Return</string>
-              </property>
-              <property name="checkable">
-               <bool>true</bool>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="2" colspan="2">
-             <widget class="QComboBox" name="cbbPort">
-              <item>
-               <property name="text">
-                <string>SWD</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>JTAG</string>
-               </property>
-              </item>
-             </widget>
-            </item>
-            <item row="3" column="0">
-             <widget class="QLabel" name="label_4">
-              <property name="text">
-               <string>复位模式</string>
-              </property>
-             </widget>
-            </item>
-            <item row="8" column="0" colspan="4">
-             <widget class="QCheckBox" name="ckbUnlock">
-              <property name="text">
-               <string>自动解除读保护</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="0">
-             <widget class="QLabel" name="label_2">
-              <property name="text">
-               <string>调试通信接口</string>
-              </property>
-             </widget>
-            </item>
             <item row="0" column="0">
              <widget class="QLabel" name="label">
               <property name="text">
                <string>调试器</string>
               </property>
-             </widget>
-            </item>
-            <item row="4" column="0" colspan="3">
-             <widget class="QLabel" name="label_5">
-              <property name="text">
-               <string>调试器 FW Version</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="2" colspan="2">
-             <widget class="QComboBox" name="cbbSerialNumber"/>
-            </item>
-            <item row="3" column="2" colspan="2">
-             <widget class="QComboBox" name="cbbResetMode">
-              <item>
-               <property name="text">
-                <string>HW RESET</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>SYSRESETREQ</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>VECTRESET</string>
-               </property>
-              </item>
              </widget>
             </item>
             <item row="7" column="0" colspan="4">
@@ -237,6 +140,20 @@
              <widget class="QLabel" name="label_3">
               <property name="text">
                <string>时钟频率上限</string>
+              </property>
+             </widget>
+            </item>
+            <item row="5" column="0" colspan="4">
+             <widget class="QCheckBox" name="ckbRunAfterProg">
+              <property name="text">
+               <string>下载后运行</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="0">
+             <widget class="QLabel" name="label_4">
+              <property name="text">
+               <string>复位模式</string>
               </property>
              </widget>
             </item>
@@ -289,6 +206,82 @@
               </item>
              </widget>
             </item>
+            <item row="4" column="3">
+             <widget class="QLabel" name="lblFWVersion">
+              <property name="text">
+               <string/>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="label_2">
+              <property name="text">
+               <string>调试通信接口</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="2" colspan="2">
+             <widget class="QComboBox" name="cbbResetMode">
+              <item>
+               <property name="text">
+                <string>HW RESET</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>SYSRESETREQ</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>VECTRESET</string>
+               </property>
+              </item>
+             </widget>
+            </item>
+            <item row="8" column="0" colspan="4">
+             <widget class="QCheckBox" name="ckbUnlock">
+              <property name="text">
+               <string>自动解除读保护</string>
+              </property>
+             </widget>
+            </item>
+            <item row="9" column="2" colspan="2">
+             <widget class="QPushButton" name="btnDeviceConnect">
+              <property name="toolTip">
+               <string>Enter</string>
+              </property>
+              <property name="text">
+               <string>Device Connect(&amp;Enter)</string>
+              </property>
+              <property name="shortcut">
+               <string>Return</string>
+              </property>
+              <property name="checkable">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="2" colspan="2">
+             <widget class="QComboBox" name="cbbPort">
+              <item>
+               <property name="text">
+                <string>SWD</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>JTAG</string>
+               </property>
+              </item>
+             </widget>
+            </item>
+            <item row="0" column="2" colspan="2">
+             <widget class="QComboBox" name="cbbSerialNumber"/>
+            </item>
             <item row="6" column="0" colspan="4">
              <widget class="QCheckBox" name="ckbVerify">
               <property name="text">
@@ -296,13 +289,10 @@
               </property>
              </widget>
             </item>
-            <item row="4" column="3">
-             <widget class="QLabel" name="lblFWVersion">
+            <item row="4" column="0" colspan="3">
+             <widget class="QLabel" name="label_5">
               <property name="text">
-               <string>--</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+               <string>调试器 FW ID</string>
               </property>
              </widget>
             </item>
@@ -505,18 +495,6 @@
           </property>
          </spacer>
         </item>
-        <item row="0" column="0" rowspan="8">
-         <widget class="QPlainTextEdit" name="txtLog">
-          <property name="acceptDrops">
-           <bool>false</bool>
-          </property>
-          <property name="plainText">
-           <string>* 成功连接目标芯片之后如果无法下载程序,可以尝试适当的调低时钟频率上限.
-* 如果遇到软件闪退之后无法连接,可以关闭软件,然后打开任务管理器,关闭openocd.exe.然后重新打开软件.
-</string>
-          </property>
-         </widget>
-        </item>
         <item row="3" column="1">
          <spacer name="verticalSpacer_4">
           <property name="orientation">
@@ -564,8 +542,25 @@
           </property>
          </spacer>
         </item>
+        <item row="0" column="0" rowspan="8">
+         <widget class="QTextBrowser" name="txtLog">
+          <property name="acceptDrops">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
        </layout>
       </widget>
+     </widget>
+    </item>
+    <item row="1" column="0">
+     <widget class="QProgressBar" name="pgb">
+      <property name="value">
+       <number>0</number>
+      </property>
+      <property name="format">
+       <string>Download: %p%</string>
+      </property>
      </widget>
     </item>
    </layout>
@@ -612,12 +607,12 @@
    <slot>clear()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>784</x>
-     <y>479</y>
+     <x>753</x>
+     <y>457</y>
     </hint>
     <hint type="destinationlabel">
-     <x>518</x>
-     <y>529</y>
+     <x>656</x>
+     <y>471</y>
     </hint>
    </hints>
   </connection>
