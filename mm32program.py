@@ -11,12 +11,18 @@
 import os
 import argparse
 import device
+import json
+import pyocd
 
 from pyocd.probe import aggregator
 from pyocd.coresight import dap, ap, cortex_m
 
-
-# os.environ['PATH'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'libusb-1.0.24/MinGW64/dll') + os.pathsep + os.environ['PATH']
+def get_path():
+    if getattr(sys, 'frozen', False):
+        application_path = sys._MEIPASS
+    else:
+        application_path = os.path.dirname(os.path.abspath(__file__))  # os.path.dirname(__file__)
+    return application_path
 
 class LinkerObject:
     def __init__(self):
@@ -27,7 +33,6 @@ class LinkerObject:
     
     def _getLinker(self):
         self.daplinks = aggregator.DebugProbeAggregator.get_all_connected_probes()
-        print(self.daplinks)
         return self.daplinks
 
     def outputGetLinker(self):
@@ -39,16 +44,14 @@ class LinkerObject:
         linkerVendorName = []
         for i, daplink in enumerate(self.daplinks):
             linkerIdx.append(i)
-            linkerUniqueID.append(daplink.unique_id)
-            linkerProductName.append(daplink.product_name)
-            linkerVendorName.append(daplink.vendor_name)
+            linkerUniqueID.append(daplink.unique_id+','+daplink.product_name+','+daplink.vendor_name)
         dicUUID  = dict(zip(linkerIdx, linkerUniqueID))
-        dicPName = dict(zip(linkerIdx, linkerProductName))
-        dicVName = dict(zip(linkerIdx, linkerVendorName))
-        print(dicUUID, dicPName, dicVName)
-        
-
-        return (dicUUID, dicPName, dicVName)
+        print(dicUUID)
+        # save files: scanlist.json
+        with open("scanlist.json","w+",encoding='utf-8') as f:
+            json.dump(dicUUID, f)
+            print("Save scanlist finish...")
+        return (dicUUID)
         
 
     def selectLinker(self, idx = 0):
@@ -57,20 +60,26 @@ class LinkerObject:
 
 
 def parse_args():
+    linker = LinkerObject()
     parser = argparse.ArgumentParser(description = 'MM32-LINK basic programming operations')
-    parser.add_argument('-G', '--get', metavar='', dest='reqGet', help="Get mm32link devices")
-    parser.add_argument('-S', '--select', type = int, metavar='', dest='reqSelect', help="Select device to connect")
+    parser.add_argument('-G', '--get', action='store_true', dest='reqGet', help="Get mm32link devices")
+    parser.add_argument('-S', '--select', type = int, metavar='', dest='reqSelect', default = 0, help="Select device to connect")
     parser.add_argument('-W', '--write', metavar='', dest='reqWrite', help="Operate: write chip")
     parser.add_argument('-R', '--read', metavar='', dest='reqRead', help="Operate: read chip")
     parser.add_argument('-E', '--earse', metavar='', dest='reqEarse', help="Operate: earse chip")
-    print(parse_args)
-    return parser.parse_args()
+    # print(parse_args)
+    # return parser.parse_args()
+    args = parser.parse_args()
+    if args.reqGet:
+        linker.outputGetLinker()
+    else:
+        print("[warning]  Please get devices firstly...")
+    
 
 
 if __name__ == "__main__":
-    # parse_args()
-    linker = LinkerObject()
-    linker.outputGetLinker()
+    parse_args()
+    # linker.outputGetLinker()
 
 
 
