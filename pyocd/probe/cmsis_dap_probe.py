@@ -18,7 +18,7 @@ from .debug_probe import DebugProbe
 from ..core import exceptions
 from .pydapaccess import DAPAccess
 #from ..board.mbed_board import MbedBoard
-#from ..board.board_ids import BOARD_ID_TO_INFO
+from board.board_ids import BOARD_ID_TO_INFO
 import six
 
 ## @brief Wraps a pydapaccess link as a DebugProbe.

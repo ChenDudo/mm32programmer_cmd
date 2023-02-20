@@ -1,0 +1,1 @@
+pyinstaller .\mm32program.spec
