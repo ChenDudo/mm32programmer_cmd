@@ -46,11 +46,11 @@ class LinkerObject:
             linkerIdx.append(i)
             linkerUniqueID.append(daplink.unique_id+','+daplink.product_name+','+daplink.vendor_name)
         dicUUID  = dict(zip(linkerIdx, linkerUniqueID))
-        print(dicUUID)
+        # print("found: "+dicUUID)
         # save files: scanlist.json
         with open("scanlist.json","w+",encoding='utf-8') as f:
             json.dump(dicUUID, f)
-            print("Save scanlist finish...")
+            print("Save scanlist finished...")
         return (dicUUID)
         
 
@@ -61,19 +61,22 @@ class LinkerObject:
 
 def parse_args():
     linker = LinkerObject()
-    parser = argparse.ArgumentParser(description = 'MM32-LINK basic programming operations')
-    parser.add_argument('-G', '--get', action='store_true', dest='reqGet', help="Get mm32link devices")
-    parser.add_argument('-S', '--select', type = int, metavar='', dest='reqSelect', default = 0, help="Select device to connect")
-    parser.add_argument('-W', '--write', metavar='', dest='reqWrite', help="Operate: write chip")
-    parser.add_argument('-R', '--read', metavar='', dest='reqRead', help="Operate: read chip")
-    parser.add_argument('-E', '--earse', metavar='', dest='reqEarse', help="Operate: earse chip")
-    # print(parse_args)
+    parser = argparse.ArgumentParser(description = 'MM32-LINK basic programming operations.')
+    parser.add_argument('-g', '--get', action='store_true', dest='reqGet', help="Get mm32link devices.")
+    parser.add_argument('-s', '--select', type = int, metavar='', dest='reqSelect', default = 0, help="Select device to connect.")
+    parser.add_argument('-w', '--write', metavar='', dest='reqWrite', help="Operate: write chip.")
+    parser.add_argument('-r', '--read', metavar='', dest='reqRead', help="Operate: read chip.")
+    parser.add_argument('-e', '--earse', metavar='', dest='reqEarse', help="Operate: earse chip.")
+    parser.add_argument('-v', '--version', action='store_true', help="Show the current version.")
     # return parser.parse_args()
+    # print(parser.print_help())
     args = parser.parse_args()
+    if args.version:
+        print("mm32program_pycmd 0.1 by NJ.")
     if args.reqGet:
         linker.outputGetLinker()
-    else:
-        print("[warning]  Please get devices firstly...")
+    # else:
+    #     print("[warning]  Please get devices firstly...")
     
 
 
