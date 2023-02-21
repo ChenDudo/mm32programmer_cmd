@@ -446,15 +446,14 @@ class DebugPort(object):
     def init(self):
         # Connect to the target.
         self.link.connect()
-        
+        self.link.swj_sequence()
+
         try:
             self.read_id_code()
         except exceptions.TransferError:
             pass
         self.set_reset_pin_low()
-        
         self.link.swj_sequence()
-        
         self.sim_halt()
             
         try:
@@ -463,12 +462,10 @@ class DebugPort(object):
             # If the read of the DP IDCODE fails, retry SWJ sequence. The DP may have been
             # in a state where it thought the SWJ sequence was an invalid transfer.
             self.set_reset_pin_low()
-        
             self.link.swj_sequence()
-            
             self.sim_halt()
-            
             self.read_id_code()
+            
         self.clear_sticky_err()
 
     def read_id_code(self):
@@ -477,6 +474,7 @@ class DebugPort(object):
         self.dp_version = (self.dpidr & DPIDR_VERSION_MASK) >> DPIDR_VERSION_SHIFT
         self.is_mindp = (self.dpidr & DPIDR_MIN_MASK) != 0
         logging.info("DP IDR = 0x%08x", self.dpidr)
+        print("DP IDR = 0x%08x"%(self.dpidr))
         return self.dpidr
 
     def flush(self):

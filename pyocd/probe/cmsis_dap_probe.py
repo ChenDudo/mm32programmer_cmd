@@ -18,7 +18,7 @@ from .debug_probe import DebugProbe
 from ..core import exceptions
 from .pydapaccess import DAPAccess
 #from ..board.mbed_board import MbedBoard
-#from ..board.board_ids import BOARD_ID_TO_INFO
+from board.board_ids import BOARD_ID_TO_INFO
 import six
 
 ## @brief Wraps a pydapaccess link as a DebugProbe.
@@ -65,7 +65,7 @@ class CMSISDAPProbe(DebugProbe):
         }
     
     ## USB VID and PID pair for DAPLink firmware.
-    DAPLINK_VIDPID = (0x0d28, 0x0204)
+    DAPLINK_VIDPID = (0x2F81, 0x0002)
     
     @classmethod
     def get_all_connected_probes(cls):
