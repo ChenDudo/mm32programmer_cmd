@@ -65,7 +65,7 @@ class CMSISDAPProbe(DebugProbe):
         }
     
     ## USB VID and PID pair for DAPLink firmware.
-    DAPLINK_VIDPID = (0x0d28, 0x0204)
+    DAPLINK_VIDPID = (0x2F81, 0x0002)
     
     @classmethod
     def get_all_connected_probes(cls):
