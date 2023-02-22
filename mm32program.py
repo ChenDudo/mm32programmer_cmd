@@ -117,12 +117,13 @@ class LinkerObject:
 
     def getChipUUID(self):
         if self.connectDAP():
-            print("[info]: MCU_ID = 0x%08x" % self.MCUID)
-            print("[info]: CPU core is %s r%dp%d" % self.CPUINFO)
-            if (self.CPUINFO[2] == 0):
-                print("[info]: DEV_ID = 0x%x" % self.M0_DEV_ID)
+            print("[info]: MCU_ID = 0x%08X" % self.MCUID)
+            if (self.CPUINFO):
+                print("[info]: CPU core is %s r%dp%d" % self.CPUINFO)
+            if (self.MCUID == 0x0BB11477) or (self.MCUID == 0x0BC11477):
+                print("[info]: DEV_ID = 0x%X" % self.M0_DEV_ID)
             else:
-                print("[info]: DEV_ID = 0x%x" % self.Mx_DEV_ID)
+                print("[info]: DEV_ID = 0x%X" % self.Mx_DEV_ID)
             return True
         else:
             return False

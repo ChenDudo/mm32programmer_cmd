@@ -36,6 +36,8 @@ ARM_CortexM3 = 0xC23
 ARM_CortexM4 = 0xC24
 ARM_CortexM7 = 0xC27
 ARM_CortexM0p = 0xC60
+ARMCHINA_STAR = 0x132
+
 
 # pylint: enable=invalid_name
 
@@ -46,7 +48,8 @@ CORE_TYPE_NAME = {
                  ARM_CortexM3 : "Cortex-M3",
                  ARM_CortexM4 : "Cortex-M4",
                  ARM_CortexM7 : "Cortex-M7",
-                 ARM_CortexM0p : "Cortex-M0+"
+                 ARM_CortexM0p : "Cortex-M0+",
+                 ARMCHINA_STAR : "STAR-MC1"
                }
 
 # Map from register name to DCRSR register index.
@@ -251,6 +254,7 @@ class CortexM(Target, CoreSightComponent):
     CPUID_REVISION_POS = 0
 
     CPUID_IMPLEMENTER_ARM = 0x41
+    CPUID_IMPLEMENTER_ARMCHINA = 0x63
     ARMv6M = 0xC # also ARMv8-M without Main Extension
     ARMv7M = 0xF # also ARMv8-M with Main Extension
 
@@ -533,10 +537,10 @@ class CortexM(Target, CoreSightComponent):
     def _read_core_type(self):
         # Read CPUID register
         cpuid = self.read32(CortexM.CPUID)
-        # print("cpuid = %x " % cpuid)    # ???? chendo add
+        # print("cpuid = 0x%X " % cpuid)    # ???? chendo add
 
         implementer = (cpuid & CortexM.CPUID_IMPLEMENTER_MASK) >> CortexM.CPUID_IMPLEMENTER_POS
-        if implementer != CortexM.CPUID_IMPLEMENTER_ARM:
+        if (implementer != CortexM.CPUID_IMPLEMENTER_ARM) and (implementer != CortexM.CPUID_IMPLEMENTER_ARMCHINA):
             logging.warning("CPU implementer is not ARM!")
 
         self.arch = (cpuid & CortexM.CPUID_ARCHITECTURE_MASK) >> CortexM.CPUID_ARCHITECTURE_POS
