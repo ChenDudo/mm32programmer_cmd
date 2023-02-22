@@ -40,7 +40,7 @@ class LinkerObject:
         self.dev = None
         self.target = 'MM32F0010'
 
-    def readStoreLinkers(self):
+    def _readStoreLinkers(self):
         if os.path.exists(get_path()+"\\scanlist.json"):
             with open(get_path()+"\\scanlist.json") as f:
                 data = json.load(f)
@@ -56,35 +56,6 @@ class LinkerObject:
         self.daplinks = aggregator.DebugProbeAggregator.get_all_connected_probes()
         return self.daplinks
 
-    def outputGetLinker(self):
-        self._getLinker()
-
-        linkerIdx = []
-        linkerUniqueID = []
-        linkerProductName = []
-        linkerVendorName = []
-        for i, daplink in enumerate(self.daplinks):
-            linkerIdx.append(i)
-            linkerUniqueID.append(daplink.unique_id+','+daplink.product_name+','+daplink.vendor_name)
-        dicUUID  = dict(zip(linkerIdx, linkerUniqueID))
-        print("Scan info: ", dicUUID)
-        with open(get_path()+"\\scanlist.json","w+",encoding='utf-8') as f:
-            json.dump(dicUUID, f)
-            print("Save scanlist finished...\nSavePath: "+get_path()+"\\scanlist.json")
-        return (dicUUID)
-        
-
-    def selectLinker(self, idx = 0):
-        self.readStoreLinkers()
-        self.selectIdx = idx
-        if idx >= len(self.deviceUIDs):
-            print("[error]: You selected is out of device range.")
-            pass
-        else:
-            self.selectUID = self.deviceUIDs[idx]
-            print("[info]: You select idx=",idx,", device UID:", self.selectUID)
-            self.getChipUUID()
-        
     def _connectDAP(self):
         try:
             # Start Connect
@@ -114,6 +85,33 @@ class LinkerObject:
             return False
         return True
 
+    def outputGetLinker(self):
+        self._getLinker()
+        linkerIdx = []
+        linkerUniqueID = []
+        linkerProductName = []
+        linkerVendorName = []
+        for i, daplink in enumerate(self.daplinks):
+            linkerIdx.append(i)
+            linkerUniqueID.append(daplink.unique_id+','+daplink.product_name+','+daplink.vendor_name)
+        dicUUID  = dict(zip(linkerIdx, linkerUniqueID))
+        print("Scan info: ", dicUUID)
+        with open(get_path()+"\\scanlist.json","w+",encoding='utf-8') as f:
+            json.dump(dicUUID, f)
+            print("Save scanlist finished...\nSavePath: "+get_path()+"\\scanlist.json")
+        return (dicUUID)
+        
+    def selectLinker(self, idx = 0):
+        self._readStoreLinkers()
+        self.selectIdx = idx
+        if idx >= len(self.deviceUIDs):
+            print("[error]: You selected is out of device range.")
+            pass
+        else:
+            self.selectUID = self.deviceUIDs[idx]
+            print("[info]: You select idx=",idx,", device UID:", self.selectUID)
+            self.getChipUUID()
+        
     def getChipUUID(self):
         if self._connectDAP():
             print("[info]: MCU_ID = 0x%08X" % self.MCUID)
@@ -127,9 +125,34 @@ class LinkerObject:
         else:
             return False
 
+    def earseChip(self):
+        if (self._connectDAP()):
+            self.dev.sect_erase(0x0000, 32*1024)
+            print("earse OK")
+            self.xlk.reset()
+            self.xlk.close()
+
+    def readChip(self):
+        if (self._connectDAP()):
+            readbuff = []
+            self.dev.chip_read(0x0000, 1024, readbuff)
+            print(readbuff)
+            print("Read OK")
+            self.xlk.reset()
+            self.xlk.close()
+
     def writeChip(self):
         if (self._connectDAP()):
-            self.dev.chip_write()
+            length = 512
+            writebuff = []
+            for i in range(length):
+                writebuff.append(i)
+            print(writebuff, len(writebuff))
+            self.dev.chip_write(0x0000, writebuff)
+            print("write OK")
+            self.xlk.reset()
+            self.xlk.close()
+
 
 def parse_args():
     linker = LinkerObject()
@@ -138,9 +161,9 @@ def parse_args():
     parser.add_argument('-g', '--get', action='store_true', dest='reqGet', help="Get DAP devices.")
     parser.add_argument('-s', '--select', type = int, metavar='', default = 0, help="Select device to connect.")  # choices=range(len(linker.linkers)),
     parser.add_argument('-c', '--connect', action='store_true', help="Operate: Connect.")
-    parser.add_argument('-w', '--write', metavar='', dest='reqWrite', help="Operate: write chip.")
-    parser.add_argument('-r', '--read', metavar='', dest='reqRead', help="Operate: read chip.")
-    parser.add_argument('-e', '--earse', metavar='', dest='reqEarse', help="Operate: earse chip.")
+    parser.add_argument('-w', '--write', action='store_true', help="Operate: write chip.")
+    parser.add_argument('-r', '--read', action='store_true', help="Operate: read chip.")
+    parser.add_argument('-e', '--earse', action='store_true', help="Operate: earse chip.")
     parser.add_argument('-f', '--file', metavar='', dest='reqFile', type=argparse.FileType('r'), help="Indicate File path")
     # return parser.parse_args()
     # print(parser.print_help())
@@ -153,6 +176,13 @@ def parse_args():
         sys.exit(1)
     if args.connect:
         linker.selectLinker(int(args.select))
+    if args.earse:
+        linker.earseChip()
+    if args.read:
+        linker.readChip()
+    if args.write:
+        linker.writeChip()
+
 
 
 if __name__ == "__main__":
