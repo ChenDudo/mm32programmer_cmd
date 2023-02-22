@@ -83,10 +83,9 @@ class LinkerObject:
         else:
             self.selectUID = self.deviceUIDs[idx]
             print("[info]: You select idx=",idx,", device UID:", self.selectUID)
-            # self.connectDAP()
             self.getChipUUID()
         
-    def connectDAP(self):
+    def _connectDAP(self):
         try:
             # Start Connect
             self._getLinker()
@@ -116,19 +115,20 @@ class LinkerObject:
         return True
 
     def getChipUUID(self):
-        if self.connectDAP():
-            print("[info]: MCU_ID = 0x%08x" % self.MCUID)
-            print("[info]: CPU core is %s r%dp%d" % self.CPUINFO)
-            if (self.CPUINFO[2] == 0):
-                print("[info]: DEV_ID = 0x%x" % self.M0_DEV_ID)
+        if self._connectDAP():
+            print("[info]: MCU_ID = 0x%08X" % self.MCUID)
+            if (self.CPUINFO):
+                print("[info]: CPU core is %s r%dp%d" % self.CPUINFO)
+            if (self.MCUID == 0x0BB11477) or (self.MCUID == 0x0BC11477):
+                print("[info]: DEV_ID = 0x%X" % self.M0_DEV_ID)
             else:
-                print("[info]: DEV_ID = 0x%x" % self.Mx_DEV_ID)
+                print("[info]: DEV_ID = 0x%X" % self.Mx_DEV_ID)
             return True
         else:
             return False
 
     def writeChip(self):
-        if (self.connectDAP()):
+        if (self._connectDAP()):
             self.dev.chip_write()
 
 def parse_args():
