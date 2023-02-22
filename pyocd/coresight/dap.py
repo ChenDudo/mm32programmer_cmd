@@ -474,7 +474,7 @@ class DebugPort(object):
         self.dp_version = (self.dpidr & DPIDR_VERSION_MASK) >> DPIDR_VERSION_SHIFT
         self.is_mindp = (self.dpidr & DPIDR_MIN_MASK) != 0
         logging.info("DP IDR = 0x%08x", self.dpidr)
-        print("DP IDR = 0x%08x"%(self.dpidr))
+        # print("DP IDR = 0x%08x"%(self.dpidr))
         return self.dpidr
 
     def flush(self):

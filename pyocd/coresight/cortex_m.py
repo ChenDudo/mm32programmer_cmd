@@ -533,6 +533,7 @@ class CortexM(Target, CoreSightComponent):
     def _read_core_type(self):
         # Read CPUID register
         cpuid = self.read32(CortexM.CPUID)
+        # print("cpuid = %x " % cpuid)    # ???? chendo add
 
         implementer = (cpuid & CortexM.CPUID_IMPLEMENTER_MASK) >> CortexM.CPUID_IMPLEMENTER_POS
         if implementer != CortexM.CPUID_IMPLEMENTER_ARM:
@@ -550,6 +551,8 @@ class CortexM(Target, CoreSightComponent):
         
         if self.core_type in CORE_TYPE_NAME:
             logging.info("CPU core #%d is %s r%dp%d", self.core_number, CORE_TYPE_NAME[self.core_type], self.cpu_revision, self.cpu_patch)
+            # print(("CPU core %d is %s r%dp%d" % (self.core_number, CORE_TYPE_NAME[self.core_type], self.cpu_revision, self.cpu_patch)))
+            return (CORE_TYPE_NAME[self.core_type], self.cpu_revision, self.cpu_patch)
         else:
             logging.warning("CPU core #%d type is unrecognized", self.core_number)
 

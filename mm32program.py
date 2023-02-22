@@ -47,7 +47,7 @@ class LinkerObject:
                 for i in range(len(data)):
                     uid = data[str(i)].split(',')[0]
                     self.deviceUIDs.append(uid)
-                print("Read retore Device info: ", self.deviceUIDs)
+                print("[info]: Last-Saved-Device_info read out: ", self.deviceUIDs)
                 pass
         else:
             print("[error]: Nothing to found. Please use '-g' or ''--get' to get Scan list...")
@@ -82,39 +82,54 @@ class LinkerObject:
             pass
         else:
             self.selectUID = self.deviceUIDs[idx]
-            print("You select idx=",idx,"device UID:", self.selectUID)
-            self.connectDAP()
+            print("[info]: You select idx=",idx,", device UID:", self.selectUID)
+            # self.connectDAP()
+            self.getChipUUID()
         
     def connectDAP(self):
         try:
+            # Start Connect
             self._getLinker()
-            # self.daplink = aggregator.DebugProbeAggregator.get_probe_with_id(self.selectUID)
             self.daplink = self.daplinks[self.selectIdx]
             self.daplink.open()
-            print("-- open linker start...")
-
+            # Get DP
             iDP = dap.DebugPort(self.daplink, None)
             iDP.init()
             iDP.power_up_debug()
-            print("-- open dp finish...")
-
+            self.MCUID = iDP.read_id_code()
+            # Get AP
             iAP = ap.AHB_AP(iDP, 0)
             iAP.init()
-            print("-- open ap finish...")
-
-            print("connect to XLink...")
+            self.CPUINFO = cortex_m.CortexM(None, iAP)._read_core_type()
+            # Get xLINK
             self.xlk = xlink.XLink(cortex_m.CortexM(None, iAP))
-            
-            print("connect to target: "+ self.target)
+            # Get DEVinfo
+            self.M0_DEV_ID = self.xlk.read_mem_U32(0x40013400, 1)[0]
+            self.Mx_DEV_ID = self.xlk.read_mem_U32(0x40007080, 1)[0]
+            # Get Device
+            print("[info]: Connect to target: "+ self.target)
             self.dev = device.Devices[self.target](self.xlk)
-            print("Connect Success...")
         except Exception as e:
-            print("[error]: Connect Failed.")
+            print("[error]: Connect Failed")
             self.daplink.close()
             return False
         return True
 
+    def getChipUUID(self):
+        if self.connectDAP():
+            print("[info]: MCU_ID = 0x%08x" % self.MCUID)
+            print("[info]: CPU core is %s r%dp%d" % self.CPUINFO)
+            if (self.CPUINFO[2] == 0):
+                print("[info]: DEV_ID = 0x%x" % self.M0_DEV_ID)
+            else:
+                print("[info]: DEV_ID = 0x%x" % self.Mx_DEV_ID)
+            return True
+        else:
+            return False
 
+    def writeChip(self):
+        if (self.connectDAP()):
+            self.dev.chip_write()
 
 def parse_args():
     linker = LinkerObject()
