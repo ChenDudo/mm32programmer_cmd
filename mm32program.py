@@ -39,8 +39,13 @@ class LinkerObject:
         self.xlk = None
         self.dev = None
         self.target = 'MM32F0010'
+        self.wrbuff = []
+        self.rdbuff = []
+        self.oprateAddr = 0
+        self.oprateSize = 0
 
     def _readStoreLinkers(self):
+        errcode = 0
         if os.path.exists(get_path()+"\\scanlist.json"):
             with open(get_path()+"\\scanlist.json") as f:
                 data = json.load(f)
@@ -48,9 +53,10 @@ class LinkerObject:
                     uid = data[str(i)].split(',')[0]
                     self.deviceUIDs.append(uid)
                 print("[info]: Last-Saved-Device_info read out: ", self.deviceUIDs)
-                pass
         else:
             print("[error]: Nothing to found. Please use '-g' or ''--get' to get Scan list...")
+            errcode = 1
+        return errcode
     
     def _getLinker(self):
         self.daplinks = aggregator.DebugProbeAggregator.get_all_connected_probes()
@@ -76,14 +82,25 @@ class LinkerObject:
             # Get DEVinfo
             self.M0_DEV_ID = self.xlk.read_mem_U32(0x40013400, 1)[0]
             self.Mx_DEV_ID = self.xlk.read_mem_U32(0x40007080, 1)[0]
-            # Get Device
-            print("[info]: Connect to target: "+ self.target)
-            self.dev = device.Devices[self.target](self.xlk)
         except Exception as e:
             print("[error]: Connect Failed")
             self.daplink.close()
             return False
         return True
+
+    def _getChipUUID(self):
+        errcode = 0
+        if self._connectDAP():
+            print("[info]: MCU_ID = 0x%08X" % self.MCUID)
+            if (self.CPUINFO):
+                print("[info]: CPU core is %s r%dp%d" % self.CPUINFO)
+            if (self.MCUID == 0x0BB11477) or (self.MCUID == 0x0BC11477):
+                print("[info]: DEV_ID = 0x%X" % self.M0_DEV_ID)
+            else:
+                print("[info]: DEV_ID = 0x%X" % self.Mx_DEV_ID)
+        else:
+            errcode = 1
+        return errcode
 
     def outputGetLinker(self):
         self._getLinker()
@@ -102,56 +119,75 @@ class LinkerObject:
         return (dicUUID)
         
     def selectLinker(self, idx = 0):
-        self._readStoreLinkers()
-        self.selectIdx = idx
-        if idx >= len(self.deviceUIDs):
-            print("[error]: You selected is out of device range.")
-            pass
+        errcode = 0
+        if (self._readStoreLinkers()):
+            self.outputGetLinker()
+            errcode = 2
         else:
-            self.selectUID = self.deviceUIDs[idx]
-            print("[info]: You select idx=",idx,", device UID:", self.selectUID)
-            self.getChipUUID()
-        
-    def getChipUUID(self):
-        if self._connectDAP():
-            print("[info]: MCU_ID = 0x%08X" % self.MCUID)
-            if (self.CPUINFO):
-                print("[info]: CPU core is %s r%dp%d" % self.CPUINFO)
-            if (self.MCUID == 0x0BB11477) or (self.MCUID == 0x0BC11477):
-                print("[info]: DEV_ID = 0x%X" % self.M0_DEV_ID)
+            self.selectIdx = idx
+            if idx >= len(self.deviceUIDs):
+                print("[error]: You selected is out of device range.")
+                errcode = 1
             else:
-                print("[info]: DEV_ID = 0x%X" % self.Mx_DEV_ID)
-            return True
-        else:
-            return False
+                self.selectUID = self.deviceUIDs[idx]
+                print("[info]: You select idx=",idx,", device UID:", self.selectUID)
+                errcode = self._getChipUUID()
+        return errcode
 
     def earseChip(self):
+        errcode = 0
         if (self._connectDAP()):
-            self.dev.sect_erase(0x0000, 32*1024)
-            print("earse OK")
-            self.xlk.reset()
-            self.xlk.close()
+            try:
+                try:
+                    self.dev = device.Devices[self.target](self.xlk)
+                except Exception as e:
+                    print("[error]Device connect Failed")
+                    errcode = 1
+                self.dev.sect_erase(self.oprateAddr, self.oprateSize)
+                print("Earse Success")
+            except Exception as e:
+                print("Earse Failed")
+                errcode = 1
+        self.xlk.reset()
+        self.xlk.close()
+        return errcode
 
     def readChip(self):
+        errcode = 0
         if (self._connectDAP()):
-            readbuff = []
-            self.dev.chip_read(0x0000, 1024, readbuff)
-            print(readbuff)
-            print("Read OK")
-            self.xlk.reset()
-            self.xlk.close()
+            try:
+                try:
+                    self.dev = device.Devices[self.target](self.xlk)
+                except Exception as e:
+                    print("[error]Device connect Failed")
+                    errcode = 1
+                self.dev.chip_read(self.oprateAddr, self.oprateSize, self.rdbuff)
+                print(self.rdbuff)
+                print("Read Success")
+            except Exception as e:
+                print("Read Failed")
+                errcode = 1
+        self.xlk.reset()
+        self.xlk.close()
+        return errcode
 
     def writeChip(self):
+        errcode = 0
         if (self._connectDAP()):
-            length = 512
-            writebuff = []
-            for i in range(length):
-                writebuff.append(i)
-            print(writebuff, len(writebuff))
-            self.dev.chip_write(0x0000, writebuff)
-            print("write OK")
-            self.xlk.reset()
-            self.xlk.close()
+            try:
+                try:
+                    self.dev = device.Devices[self.target](self.xlk)
+                except Exception as e:
+                    print("[error]Device connect Failed")
+                    errcode = 1
+                self.dev.chip_write(self.oprateAddr, self.wrbuff)
+                print("Write Success")
+            except Exception as e:
+                print("Write Failed")
+                errcode = 1
+        self.xlk.reset()
+        self.xlk.close()
+        return errcode
 
 
 def parse_args():
