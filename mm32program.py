@@ -219,7 +219,40 @@ def parse_args():
     if args.write:
         linker.writeChip()
 
+def commandHanle():
+    parser = argparse.ArgumentParser(description = 'MM32-LINK basic programming operations.')
+    parser.add_argument('-v', '--version', action='store_true', help="show the current version.")
+    parser.add_argument('-p', '-path', metavar='', dest='path', help="json path(string)")
+    args = parser.parse_args()
+    if args.version:
+        print("mm32program_pycmd 0.2 by NJ.")
+        sys.exit(0)
+    if args.path:
+        # print(type(args.path), args.path)
+        try:
+            filehandle(args.path)
+        except Exception as e:
+            pass
+            print("[error]")
+        # sys.exit(1)
+    # print(parser.print_help())
+
+def filehandle(path):
+    linker = LinkerObject()
+    with open(path, 'r+') as f:
+        jsonText = json.load(f)
+        cmd = jsonText['command']
+        if (cmd == 'devicelist'):
+            linker.outputGetLinker()
+        if (cmd == 'connectDevice'):
+            idx = (jsonText["index"])
+            print(type(idx))
+            linker.selectLinker(idx)
+        
+            
+            
 
 
 if __name__ == "__main__":
-    parse_args()
+    # parse_args()
+    commandHanle()

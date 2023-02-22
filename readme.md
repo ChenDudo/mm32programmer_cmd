@@ -46,7 +46,7 @@ this is just for MM32-LINK MINI Programmer.
 #### Paramater: String
 ```json		
 {
-    command: 'deviceList',
+	"command": "devicelist"
 }
 ```
 
@@ -69,9 +69,9 @@ this is just for MM32-LINK MINI Programmer.
 #### Paramater:
 ```json	
 {
-    command: 'connectDevice', 
-    index: 1
-} 
+	"command": "connectDevice",
+	"index": 1
+}
 ```
 
 - index为deviceList返回的下标索引值,后期可以扩展编程器配置
