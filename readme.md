@@ -74,6 +74,11 @@ return
             "product": "MM32_V1 CMSIS-DAP",
             "vendor":"MindMotion",
         },
+        {
+            "uid": "0880f76bf12004c75fd",
+            "product": "MM32_V1 CMSIS-DAP",
+            "vendor":"MindMotion",
+        }
     ]
 }
 ```
