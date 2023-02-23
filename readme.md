@@ -53,13 +53,13 @@ this is just for MM32-LINK MINI Programmer.
 #### Return: json_printf
 ```json	
 {
-    code: 0,
-    message: '',
-    data: [
+    "code": 0,
+    "message": "",
+    "data": [
         {
-            uid: "0880ff1bf12004c75fd",
-            target: "CMSIS-DAP",
-            company:"MindMotion Co.,Ltd.",
+            "uid": "0880ff1bf12004c75fd",
+            "target": "CMSIS-DAP",
+            "company":"MindMotion Co.,Ltd.",
         },
     ]
 }
@@ -78,9 +78,9 @@ this is just for MM32-LINK MINI Programmer.
 #### Return:
 ```json	
 {
-    code：0,
-    message: '',
-    data: {},
+    "code": 0,
+    "message": "",
+    "data": []
 }
 ```
 
@@ -88,9 +88,11 @@ this is just for MM32-LINK MINI Programmer.
 #### Paramater:
 ```json	
 {
-    command: 'readMemory', 
-    address: 134217728, 
-    length: 16
+	"command": "readMemory",
+	"index": 0,
+	"mcu": "MM32F0010",
+    "address": 0, 
+    "length": 1024
 }
 ```
     
@@ -99,9 +101,9 @@ this is just for MM32-LINK MINI Programmer.
 #### Return:
 ```json	
 {
-    code: 0,
-    message: '',
-    data: ["AA","BB","11","01","23"],
+    "code": 0,
+    "message": "",
+    "data": [12,13,14]
 }
 ```
 
@@ -109,10 +111,11 @@ this is just for MM32-LINK MINI Programmer.
 #### Paramater:
 ```json
 {
-    command: 'writeMemory',
-    address: 134217728, 
-    length: 16,
-    data: ["00","11","22","33","44","55","66","77","88","99","AA","BB","CC","DD","EE","FF"],
+	"command": "writeMemory",
+	"index": 0,
+	"mcu": "MM32F0010",
+	"address": 0,
+    "data": [1, 2]
 }
 ```
 
@@ -121,9 +124,62 @@ this is just for MM32-LINK MINI Programmer.
 - data: 欲写入数据
 #### Return:
 ```json
-    {
-        code: 0,
-        message: '',
-        data: {},
-    }
+{
+    "code": 0,
+    "message": ""
+}
+```
+
+### 5.1 全片擦除 earseChip
+```json
+{
+	"command": "earseChip",
+	"index": 0,
+	"mcu": "MM32F0010"
+}
+```
+
+### 5.2 扇区擦除 earseSector
+```json
+{
+	"command": "earseSector",
+	"index": 0,
+	"mcu": "MM32F0010",
+	"address": "0x0000",
+	"length": 32768
+}
+```
+#### Return:
+```json
+{
+    "code": 0,
+    "message": ""
+}
+```
+
+## commanline
+
+- devicelist
+```
+"{'command': 'devicelist'}"
+```
+
+- connectDevice
+```cmd
+"{'command': 'connectDevice', 'index': 0}"
+```
+
+- readMemory
+```
+"{'command': 'readMemory', 'index': 0, 'mcu': 'MM32F0010', 'address': 0, 'length': 1024}"
+```
+
+- writeMemory
+```
+"{'command': 'writeMemory','index': 0,'mcu': 'MM32F0010','address': 0,'data': [1, 2]}"
+```
+
+- earseChip
+```
+"{'command': 'earseChip','index': 0,'mcu': 'MM32F0010'}"
 ```
