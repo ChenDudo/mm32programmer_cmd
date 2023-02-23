@@ -29,26 +29,33 @@ def get_path():
 #     else:
 #         application_path = os.path.dirname(os.path.abspath(__file__))  # os.path.dirname(__file__)
 #     return application_path
+
+
 class returnJson():
     def __init__(self):
-        self.code = 0
-        self.message = '--'
-        self.clearMessage()
+        self.dict = {
+            'code':     0,
+            'message':  '',
+            'data':     []
+        }
 
     def clearMessage(self):
-        self.message = ''
-
-    def appendMessage(self, str):
-        self.message = self.message + (str)
+        self.dict['message'] = ''
 
     def setCode(self, num):
-        self.code = num
+        self.dict['code'] = num
+
+    def appendMes(self, str):
+        self.dict['message'] = self.dict['message'] + (str)
 
     def output(self):
-        demjson.encode(self, obj, nest_level = 0)
+        return json.dumps(self.dict)
 
-class LinkerObject:
+class LinkerObject(returnJson):
+    # reCode = returnJson()
+
     def __init__(self):
+        super(LinkerObject, self).__init__()
         self.selectUID = ''
         self.selectIdx = 0
         self.deviceUIDs = []
@@ -61,8 +68,7 @@ class LinkerObject:
         self.rdbuff = []
         self.oprateAddr = 0
         self.oprateSize = 0
-        self.errCode = 0
-        self.message = ''
+        
 
     def setTarget(self, targetname):
         self.target = targetname
@@ -89,9 +95,9 @@ class LinkerObject:
                 for i in range(len(data)):
                     uid = data[str(i)].split(',')[0]
                     self.deviceUIDs.append(uid)
-                # self.message = self.message + ("[info]: Last-Saved-Device_info read out: ", self.deviceUIDs)
+                # print("[info]: Last-Saved-Device_info read out: ", self.deviceUIDs)
         else:
-            # self.message = self.message + ("[error]: Nothing to found. Please use '-g' or ''--get' to get Scan list...")
+            # print("[error]: Nothing to found. Please use '-g' or ''--get' to get Scan list...")
             return 1
         return 0
     
@@ -120,7 +126,7 @@ class LinkerObject:
             self.M0_DEV_ID = self.xlk.read_mem_U32(0x40013400, 1)[0]
             self.Mx_DEV_ID = self.xlk.read_mem_U32(0x40007080, 1)[0]
         except Exception as e:
-            self.message = "[error]: Connect Failed\n"
+            print("[error]: Connect Failed\n")
             self.daplink.close()
             return 1
         return 0
@@ -138,22 +144,55 @@ class LinkerObject:
         else:
             return 1
 
+    ############################################################################
+    ## deviceList
+    ## return :
+    #     {
+    #     "code": 0,
+    #     "message": "",
+    #     "data": [
+    #         {
+    #             "uid": "0880ff03f13004c75fd",
+    #             "target": "MM32_V1 CMSIS-DAP",
+    #             "company":"MindMotion",
+    #         },
+    #     ]
+    # }
+    ############################################################################
     def outputGetLinker(self):
         self._getLinker()
+        
+        linker_dict = {
+            'uid' : '',
+            'target' : '',
+            'vendor' : ''
+        }
+
         linkerIdx = []
         linkerUniqueID = []
         linkerProductName = []
         linkerVendorName = []
+        
         for i, daplink in enumerate(self.daplinks):
             linkerIdx.append(i)
             linkerUniqueID.append(daplink.unique_id+','+daplink.product_name+','+daplink.vendor_name)
         dicUUID  = dict(zip(linkerIdx, linkerUniqueID))
-        print("Scan info: ", dicUUID)
+
+        for i, daplink in enumerate(self.daplinks):
+            print("TODO")
+
+        # print("Scan info: ", dicUUID)
+        ## Save scanlist.json file
         with open(get_path()+"\\scanlist.json","w+",encoding='utf-8') as f:
             json.dump(dicUUID, f)
-            print("Save scanlist finished...\nSavePath: "+get_path()+"\\scanlist.json")
-        return (dicUUID)
-        
+            # print("Save scanlist finished...\nSavePath: "+get_path()+"\\scanlist.json")
+        ## return output
+        self.setCode(0)
+        self.appendMes("[info] Get device list success")
+        # print(self.dict['message'])
+
+    
+    ############################################################################
     def selectLinker(self, idx = 0):
         errcode = 0
         if (self._readStoreLinkers()):
@@ -162,14 +201,26 @@ class LinkerObject:
         else:
             self.selectIdx = idx
             if idx >= len(self.deviceUIDs):
-                print("[error]: You selected is out of device range.")
+                # print("[error]: You selected is out of device range.")
                 errcode = 1
             else:
                 self.selectUID = self.deviceUIDs[idx]
-                print("[info]: You select idx=",idx,", device UID:", self.selectUID)
-                self._getChipUUID()
+                # print("[info]: You select idx=",idx,", device UID:", self.selectUID)
+                # self._getChipUUID()
+                if not self._connectDAP():
+                    print("[info]: MCU_ID = 0x%08X" % self.MCUID)
+                    if (self.CPUINFO):
+                        print("[info]: CPU core is %s r%dp%d" % self.CPUINFO)
+                    if (self.MCUID == 0x0BB11477) or (self.MCUID == 0x0BC11477):
+                        print("[info]: DEV_ID = 0x%X" % self.M0_DEV_ID)
+                    else:
+                        print("[info]: DEV_ID = 0x%X" % self.Mx_DEV_ID)
+                    return 0
+                else:
+                    return 1
         return errcode
 
+    ############################################################################
     def earseSector(self):
         errcode = 0
         if not self._connectDAP():
@@ -177,18 +228,18 @@ class LinkerObject:
                 try:
                     self.dev = device.Devices[self.target](self.xlk)
                 except Exception as e:
-                    self.message = self.message + ("[error]Device connect Failed")
+                    # print("[error]Device connect Failed")
                     errcode = 1
                 self.dev.sect_erase(self.oprateAddr, self.oprateSize)
-                self.message = self.message + ("Earse Success")
+                print("Earse Success")
             except Exception as e:
-                self.message = self.message + ("Earse Failed")
+                print("Earse Failed")
                 errcode = 1
         self.xlk.reset()
         self.xlk.close()
-        self.errCode = errcode
         return errcode
 
+    ############################################################################
     def earseChip(self):
         errcode = 0
         if not self._connectDAP():
@@ -196,7 +247,7 @@ class LinkerObject:
                 try:
                     self.dev = device.Devices[self.target](self.xlk)
                 except Exception as e:
-                    print("[error]Device connect Failed")
+                    # print("[error]Device connect Failed")
                     errcode = 1
                 self.dev.chip_erase()
                 print("Earse Success")
@@ -205,9 +256,9 @@ class LinkerObject:
                 errcode = 1
         self.xlk.reset()
         self.xlk.close()
-        self.errCode = errcode
         return errcode
 
+    ############################################################################
     def readChip(self):
         errcode = 0
         if not self._connectDAP():
@@ -215,19 +266,19 @@ class LinkerObject:
                 try:
                     self.dev = device.Devices[self.target](self.xlk)
                 except Exception as e:
-                    self.message = self.message + ("[error]Device connect Failed")
+                    # print("[error]Device connect Failed")
                     errcode = 1
                 self.dev.chip_read(self.oprateAddr, self.oprateSize, self.rdbuff)
                 print(self.rdbuff)
-                self.message = self.message + ("Read Success")
+                print("Read Success")
             except Exception as e:
-                self.message = self.message + ("Read Failed")
+                print("Read Failed")
                 errcode = 1
         self.xlk.reset()
         self.xlk.close()
-        self.errCode = errcode
         return errcode
 
+    ############################################################################
     def writeChip(self):
         errcode = 0
         if not self._connectDAP():
@@ -235,16 +286,15 @@ class LinkerObject:
                 try:
                     self.dev = device.Devices[self.target](self.xlk)
                 except Exception as e:
-                    self.message = self.message + ("[error]Device connect Failed")
+                    print("[error]Device connect Failed")
                     errcode = 1
                 self.dev.chip_write(self.oprateAddr, self.wrbuff)
-                self.message = self.message + ("Write Success")
+                print("Write Success")
             except Exception as e:
-                self.message = self.message + ("Write Failed")
+                print("Write Failed")
                 errcode = 1
         self.xlk.reset()
         self.xlk.close()
-        self.errCode = errcode
         return errcode
 
 
@@ -313,7 +363,7 @@ def commandHanle():
 
 def jsonhandle(jsonText):
     linker = LinkerObject()
-    reCode  = returnJson()
+    
     cmd = jsonText['command']
     if (cmd == 'devicelist'):
         linker.outputGetLinker()
@@ -336,12 +386,6 @@ def jsonhandle(jsonText):
         linker.setSelectIdx(jsonText['index'])
         linker.setTarget(jsonText['mcu'])
         linker.earseChip()
-    
-    reCode.setCode(linker.errCode)
-    reCode.appendMessage(linker.message)
-    print(reCode.message)
-    # print(reCode.rxbuff)
-    # return reCode.output()
     
 
 

@@ -1,8 +1,16 @@
 # MM32Programmer CMD
 
-## Bref
+## Brief
 
 this is just for MM32-LINK MINI Programmer.
+
+## support 
+- MM32F0010
+- MM32F0020
+- MM32F0x40
+
+
+
 
 ## How to Get Target Info
 
@@ -41,16 +49,21 @@ this is just for MM32-LINK MINI Programmer.
 
 ## MM32Programmer Command List
 
-### 1.deviceList
+### 1. deviceList
 
-#### Paramater: String
+json file
 ```json		
 {
 	"command": "devicelist"
 }
 ```
 
-#### Return: json_printf
+json command
+```cmd
+"{'command': 'devicelist'}"
+```
+
+return
 ```json	
 {
     "code": 0,
@@ -58,15 +71,16 @@ this is just for MM32-LINK MINI Programmer.
     "data": [
         {
             "uid": "0880ff1bf12004c75fd",
-            "target": "CMSIS-DAP",
-            "company":"MindMotion Co.,Ltd.",
+            "product": "MM32_V1 CMSIS-DAP",
+            "vendor":"MindMotion",
         },
     ]
 }
 ```
 
 ### 2.connectDevice
-#### Paramater:
+
+json file
 ```json	
 {
 	"command": "connectDevice",
@@ -74,18 +88,28 @@ this is just for MM32-LINK MINI Programmer.
 }
 ```
 
-- index为deviceList返回的下标索引值,后期可以扩展编程器配置
-#### Return:
+json command
+```cmd
+"{'command': 'connectDevice', 'index': 0}"
+```
+
+> index为deviceList返回的下标索引值,后期可以扩展编程器配置
+
+
+Return
 ```json	
 {
     "code": 0,
     "message": "",
-    "data": []
+    "data": [
+        "MCUID" : 
+    ]
 }
 ```
 
 ### 3.readMemory
-#### Paramater:
+
+json file
 ```json	
 {
 	"command": "readMemory",
@@ -96,9 +120,15 @@ this is just for MM32-LINK MINI Programmer.
 }
 ```
     
-- address:欲读取数据地址
-- length:欲读取数据长度(全部为10进制)
-#### Return:
+>address:欲读取数据地址</br>
+length:欲读取数据长度(全部为10进制)
+
+json command
+```cmd
+"{'command': 'readMemory', 'index': 0, 'mcu': 'MM32F0010', 'address': 0, 'length': 1024}"
+```
+
+Return
 ```json	
 {
     "code": 0,
@@ -108,7 +138,8 @@ this is just for MM32-LINK MINI Programmer.
 ```
 
 ### 4.writeMemory
-#### Paramater:
+
+json file
 ```json
 {
 	"command": "writeMemory",
@@ -119,10 +150,17 @@ this is just for MM32-LINK MINI Programmer.
 }
 ```
 
-- address:欲写入数据地址
-- length:欲写入取数据长度(全部为10进制)
-- data: 欲写入数据
-#### Return:
+json command
+```cmd
+"{'command': 'writeMemory','index': 0,'mcu': 'MM32F0010','address': 0,'data': [1, 2]}"
+```
+
+>address:欲写入数据地址</br>
+length:欲写入取数据长度(全部为10进制)</br>
+data: 欲写入数据
+
+
+Return
 ```json
 {
     "code": 0,
@@ -131,6 +169,7 @@ this is just for MM32-LINK MINI Programmer.
 ```
 
 ### 5.1 全片擦除 earseChip
+json file
 ```json
 {
 	"command": "earseChip",
@@ -138,8 +177,13 @@ this is just for MM32-LINK MINI Programmer.
 	"mcu": "MM32F0010"
 }
 ```
+json command
+```
+"{'command': 'earseChip','index': 0,'mcu': 'MM32F0010'}"
+```
 
 ### 5.2 扇区擦除 earseSector
+json file
 ```json
 {
 	"command": "earseSector",
@@ -149,37 +193,15 @@ this is just for MM32-LINK MINI Programmer.
 	"length": 32768
 }
 ```
-#### Return:
+
+json command
+```
+```
+
+Return
 ```json
 {
     "code": 0,
     "message": ""
 }
-```
-
-## commanline
-
-- devicelist
-```
-"{'command': 'devicelist'}"
-```
-
-- connectDevice
-```cmd
-"{'command': 'connectDevice', 'index': 0}"
-```
-
-- readMemory
-```
-"{'command': 'readMemory', 'index': 0, 'mcu': 'MM32F0010', 'address': 0, 'length': 1024}"
-```
-
-- writeMemory
-```
-"{'command': 'writeMemory','index': 0,'mcu': 'MM32F0010','address': 0,'data': [1, 2]}"
-```
-
-- earseChip
-```
-"{'command': 'earseChip','index': 0,'mcu': 'MM32F0010'}"
 ```
