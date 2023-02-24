@@ -88,18 +88,18 @@ json command
 return
 ```json	
 {
-    "code": 0,
-    "message": "",
-    "data": [
+    'code': 0, 
+    'message': '[info] Get device list success', 
+    'data': [
         {
-            "uid": "0880ff1bf12004c75fd",
-            "product": "MM32_V1 CMSIS-DAP",
-            "vendor":"MindMotion",
-        },
+            'uid': '0880ff20f17004c75fd',
+            'product': 'MM32_V1 CMSIS-DAP',
+            'vendor': 'MindMotion'
+        }, 
         {
-            "uid": "0880f76bf12004c75fd",
-            "product": "MM32_V1 CMSIS-DAP",
-            "vendor":"MindMotion",
+            'uid': '0880ff20f17004c75fd', 
+            'product': 'MM32_V1 CMSIS-DAP', 
+            'vendor': 'MindMotion'
         }
     ]
 }
@@ -126,10 +126,14 @@ json command
 Return
 ```json	
 {
-    "code": 0,
-    "message": "",
-    "data": [
-        "MCUID" : 
+    'code': 0, 
+    'message': '[info] You select idx=0, device UID:0880ff20f17004c75fd\n[info] Target connnect Pass\n', 
+    'data': [
+        {
+            'MCU_ID': 196154487, 
+            'CPU_INFO': 'Cortex-M0 r0p0', 
+            'DEV_ID': 2353221841
+        }
     ]
 }
 ```
@@ -143,7 +147,7 @@ json file
 	"index": 0,
 	"mcu": "MM32F0010",
     "address": 0, 
-    "length": 1024
+    "length": 10
 }
 ```
     
@@ -152,15 +156,15 @@ length:欲读取数据长度(全部为10进制)
 
 json command
 ```cmd
-"{'command': 'readMemory', 'index': 0, 'mcu': 'MM32F0010', 'address': 0, 'length': 1024}"
+"{'command': 'readMemory', 'index': 0, 'mcu': 'MM32F0010', 'address': 0, 'length': 10}"
 ```
 
 Return
 ```json	
 {
-    "code": 0,
-    "message": "",
-    "data": [12,13,14]
+    'code': 0, 
+    'message': '[info] Read Success', 
+    'data': [255, 255, 255, 255, 255, 255, 255, 255, 255, 255]
 }
 ```
 
@@ -190,8 +194,9 @@ data: 欲写入数据
 Return
 ```json
 {
-    "code": 0,
-    "message": ""
+    'code': 0, 
+    'message': '[info] Read Success', 
+    'data': [255, 255, 255, 255, 255, 255, 255, 255, 255, 255]
 }
 ```
 
@@ -205,7 +210,7 @@ json file
 }
 ```
 json command
-```
+```cmd
 "{'command': 'earseChip','index': 0,'mcu': 'MM32F0010'}"
 ```
 
@@ -216,20 +221,29 @@ json file
 	"command": "earseSector",
 	"index": 0,
 	"mcu": "MM32F0010",
-	"address": "0x0000",
+	"address": 0,
 	"length": 32768
+}
+```
+Return
+```json
+{
+    'code': 0, 
+    'message': '[info] Earse Success\n', 
+    'data': []
 }
 ```
 
 json command
 ```
-{'command': 'earseSector','index': 0,'mcu': 'MM32F0010','address': 0,'length': 32768}
+"{'command': 'earseSector','index': 0,'mcu': 'MM32F0010','address': 0,'length': 32768}"
 ```
 
 Return
 ```json
 {
-    "code": 0,
-    "message": ""
+    'code': 0, 
+    'message': '[info] Earse Success\n', 
+    'data': []
 }
 ```
