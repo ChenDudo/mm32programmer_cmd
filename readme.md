@@ -7,8 +7,30 @@ this is just for MM32-LINK MINI Programmer.
 ## support 
 - MM32F0010
 - MM32F0020
-- MM32F0x40
-
+- MM32F0040
+- MM32F0130 *
+- MM32F0140 *
+- MM32F0160 *
+- MM32G0140 *
+- MM32A0140 *
+- MM32F003 *
+- MM32L07x *
+- MM32F03x *
+- MM32L0130 *
+- MM32L0160 *
+- MM32SPIN05 *
+- MM32SPIN06 *
+- MM32SPIN07 *
+- MM32SPIN08 *
+- MM32SPIN0280 *
+- MM32F103C8 *
+- MM32F103CB *
+- MM32L3xx *
+- MM32F3270 *
+- MM32F5270 *
+- MM32F5280 *
+  
+> \*: Test
 
 
 
@@ -201,6 +223,7 @@ json file
 
 json command
 ```
+{'command': 'earseSector','index': 0,'mcu': 'MM32F0010','address': 0,'length': 32768}
 ```
 
 Return

@@ -202,23 +202,23 @@ class LinkerObject(returnJson):
                 if not self._connectDAP():
                     cpuinfostr = ''
                     devidstr = ''
-                    # print("[info]: MCU_ID = 0x%08X" % self.MCUID)
                     if (self.CPUINFO):
-                        cpuinfostr = print("[info]: CPU core is %s r%dp%d" % self.CPUINFO)
+                        # print("[info]: CPU core is %s r%dp%d" % self.CPUINFO)
+                        cpuinfostr = self.CPUINFO[0] + ' r'+str(self.CPUINFO[1])+'p'+str(self.CPUINFO[2])
                     if (self.MCUID == 0x0BB11477) or (self.MCUID == 0x0BC11477):
                         # print("[info]: DEV_ID = 0x%X" % self.M0_DEV_ID)
-                        devidstr = str(self.M0_DEV_ID)
+                        devid = self.M0_DEV_ID
                     else:
                         # print("[info]: DEV_ID = 0x%X" % self.Mx_DEV_ID)
-                        devidstr = str(self.Mx_DEV_ID)
+                        devid = self.Mx_DEV_ID
                     mcuInfo_dict = {
-                        'MCUID' : '',
-                        'CPUINFO' : '',
-                        'DEVID' : ''
+                        'MCU_ID' : 0,
+                        'CPU_INFO' : '',
+                        'DEV_ID' : 0
                     }
-                    mcuInfo_dict['MCUID'] = str(self.CPUINFO)
-                    mcuInfo_dict['CPUINFO'] = cpuinfostr
-                    mcuInfo_dict['DEVID'] = devidstr
+                    mcuInfo_dict['MCU_ID'] = self.MCUID
+                    mcuInfo_dict['CPU_INFO'] = cpuinfostr
+                    mcuInfo_dict['DEV_ID'] = devid
                     self.owndict['data'].append(mcuInfo_dict)
                     self.setCode(0)
                     self.appendMes("[info] Target connnect Pass\n")
@@ -229,7 +229,6 @@ class LinkerObject(returnJson):
 
     ############################################################################
     def earseSector(self):
-        errcode = 0
         if not self._connectDAP():
             try:
                 try:
@@ -275,83 +274,84 @@ class LinkerObject(returnJson):
 
     ############################################################################
     def readChip(self):
-        errcode = 0
+        self.setCode(0)
         if not self._connectDAP():
             try:
                 try:
                     self.dev = device.Devices[self.target](self.xlk)
                 except Exception as e:
-                    # print("[error]Device connect Failed")
-                    errcode = 1
+                    self.appendMes("[error] Device connect Failed")
+                    self.setCode(1)
                 self.dev.chip_read(self.oprateAddr, self.oprateSize, self.rdbuff)
-                print(self.rdbuff)
-                print("Read Success")
+                # print(self.rdbuff)
+                for i in self.rdbuff:
+                    self.owndict['data'].append(i)
+                self.appendMes("[info] Read Success")
             except Exception as e:
-                print("Read Failed")
-                errcode = 1
+                self.appendMes("[error] Read Failed")
+                self.setCode(1)
         self.xlk.reset()
         self.xlk.close()
-        return errcode
+        print(self.owndict)
 
     ############################################################################
     def writeChip(self):
-        errcode = 0
+        self.setCode(0)
         if not self._connectDAP():
             try:
                 try:
                     self.dev = device.Devices[self.target](self.xlk)
                 except Exception as e:
-                    print("[error]Device connect Failed")
-                    errcode = 1
+                    self.appendMes("[error] Device connect Failed")
+                    self.setCode(1)
                 self.dev.chip_write(self.oprateAddr, self.wrbuff)
-                print("Write Success")
+                self.appendMes("[info] Write Success")
             except Exception as e:
-                print("Write Failed")
-                errcode = 1
+                self.appendMes("[error] Write Failed")
+                self.setCode(1)
         self.xlk.reset()
         self.xlk.close()
-        return errcode
+        print(self.owndict)
 
-
-def parse_args():
-    linker = LinkerObject()
-    parser = argparse.ArgumentParser(description = 'MM32-LINK basic programming operations.')
-    parser.add_argument('-v', '--version', action='store_true', help="Show the current version.")
-    parser.add_argument('-g', '--get', action='store_true', dest='reqGet', help="Get DAP devices.")
-    parser.add_argument('-s', '--select', type = int, metavar='', default = 0, help="Select device to connect.")  # choices=range(len(linker.linkers)),
-    parser.add_argument('-c', '--connect', action='store_true', help="Operate: Connect.")
-    parser.add_argument('-w', '--write', action='store_true', help="Operate: write chip.")
-    parser.add_argument('-r', '--read', action='store_true', help="Operate: read chip.")
-    parser.add_argument('-e', '--earse', action='store_true', help="Operate: earse chip.")
-    parser.add_argument('-f', '--file', metavar='', dest='reqFile', type=argparse.FileType('r'), help="Indicate File path")
-    # return parser.parse_args()
-    # print(parser.print_help())
-    args = parser.parse_args()
-    if args.version:
-        print("mm32program_pycmd 0.1 by NJ.")
-        sys.exit(0)
-    if args.reqGet:
-        linker.outputGetLinker()
-        sys.exit(1)
-    if args.connect:
-        linker.selectLinker(int(args.select))
-    if args.earse:
-        linker.earseChip()
-    if args.read:
-        linker.readChip()
-    if args.write:
-        linker.writeChip()
+# def parse_args():
+#     linker = LinkerObject()
+#     parser = argparse.ArgumentParser(description = 'MM32-LINK Basic Programming Operations')
+#     parser.add_argument('-v', '--version', action='store_true', help="Show the current version.")
+#     parser.add_argument('-g', '--get', action='store_true', dest='reqGet', help="Get DAP devices.")
+#     parser.add_argument('-s', '--select', type = int, metavar='', default = 0, help="Select device to connect.")  # choices=range(len(linker.linkers)),
+#     parser.add_argument('-c', '--connect', action='store_true', help="Operate: Connect.")
+#     parser.add_argument('-w', '--write', action='store_true', help="Operate: write chip.")
+#     parser.add_argument('-r', '--read', action='store_true', help="Operate: read chip.")
+#     parser.add_argument('-e', '--earse', action='store_true', help="Operate: earse chip.")
+#     parser.add_argument('-f', '--file', metavar='', dest='reqFile', type=argparse.FileType('r'), help="Indicate File path")
+#     # return parser.parse_args()
+#     # print(parser.print_help())
+#     args = parser.parse_args()
+#     if args.version:
+#         print("MM32Program_pyCMD 0.9(2023/2/24) by BD4XSU.")
+#         sys.exit(0)
+#     if args.reqGet:
+#         linker.outputGetLinker()
+#         sys.exit(1)
+#     if args.connect:
+#         linker.selectLinker(int(args.select))
+#     if args.earse:
+#         linker.earseChip()
+#     if args.read:
+#         linker.readChip()
+#     if args.write:
+#         linker.writeChip()
 
 def commandHanle():
-    parser = argparse.ArgumentParser(description = 'MM32-LINK basic programming operations.')
-    parser.add_argument('-v', '--version', action='store_true', help="show the current version.")
+    parser = argparse.ArgumentParser(description = 'MM32-LINK Basic Programming Operations')
+    parser.add_argument('-v', '--version', action='store_true', help="show the current version")
     parser.add_argument('-p', '-path', metavar='', dest='path', help="json path")
     parser.add_argument('-j', '-json', metavar='', dest='json', help="json (string)")
-    parser.add_argument('-E', '--earse', action='store_true', help="! Test earse MCU [Unstable]")
-    parser.add_argument('-CH', '--connectHalt', action='store_true', help="! Test connect & halt MCU [Unstable]")
+    parser.add_argument('-E', '--earse', action='store_true', help="!Test earse MCU [Unstable]")
+    parser.add_argument('-CH', '--connectHalt', action='store_true', help="!Test connect & halt MCU [Unstable]")
     args = parser.parse_args()
     if args.version:
-        print("mm32program_pycmd 0.2 by NJ.")
+        print("MM32Program_pyCMD 1.0(2023/2/24) by BD4XSU.")
         sys.exit(0)
     if args.earse:
         linker = LinkerObject()
@@ -401,7 +401,12 @@ def jsonhandle(jsonText):
         linker.setSelectIdx(jsonText['index'])
         linker.setTarget(jsonText['mcu'])
         linker.earseChip()
-    
+    if (cmd == 'earseSector'):
+        linker.setSelectIdx(jsonText['index'])
+        linker.setTarget(jsonText['mcu'])
+        linker.oprateAddr = jsonText['address']
+        linker.oprateSize = jsonText['length']
+        linker.earseSector()
 
 
 if __name__ == "__main__":

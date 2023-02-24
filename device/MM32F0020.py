@@ -99,8 +99,8 @@ MM32F0020_flash_algo = {
     # Flash information
     'flash_start'        : 0x08000000,
     'flash_size'         : 0x00008000,
-    'flash_page_size'    : 0x00000400//2,
+    'flash_page_size'    : 0x00000200,
     'sector_sizes': (
-        (0x00000, 0x00400),
+        (0x00000, 0x00200),
     )
 }
