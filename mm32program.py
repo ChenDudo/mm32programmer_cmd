@@ -351,7 +351,7 @@ def commandHanle():
     parser.add_argument('-CH', '--connectHalt', action='store_true', help="!Test connect & halt MCU [Unstable]")
     args = parser.parse_args()
     if args.version:
-        print("MM32Program_pyCMD 1.0(2023/2/24) by BD4XSU.")
+        print("MM32Program_pyCMD 1.0(2023/2/24) by BD4SXU.")
         sys.exit(0)
     if args.earse:
         linker = LinkerObject()
