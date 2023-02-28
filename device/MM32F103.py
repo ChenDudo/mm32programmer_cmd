@@ -37,7 +37,7 @@ class MM32F103C8(object):
 
         buff.extend(list(bytes(c_char_Array)))
 
-    def chip_erase(self, addr, size):
+    def chip_erase(self):
         self.flash.Init(0, 0, 4)
         self.flash.EraseChip()
         self.flash.UnInit(4)
