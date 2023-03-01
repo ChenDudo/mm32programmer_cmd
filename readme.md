@@ -57,7 +57,7 @@ this is just for MM32-LINK MINI Programmer.
 
 | MCU | Addr | Value|
 |---|:---:|:---:|
-| MM32F0010 | 0x40013400 | 0xBC4350D1 |
+| MM32F0010 | 0x40013400 | 0x8C4350D1 |
 | MM32F0020 | 0x40013400 | 0x4C50F800 |
 | MM32F0040 | 0x40013400 | 0X4C50E800 |
 | MM32F0140 | 0x40013400 | 0X4C50E800 |
@@ -68,6 +68,12 @@ this is just for MM32-LINK MINI Programmer.
 | MM32L0130 | 0x40013400 | 0x4C4D1000 |
 | MM32F3270 | 0x40007080 | 0xCC9AA0E7 |
 | MM32F5270 | 0x40007080 | 0x4D4D0800 |
+
+### 3. MCU UID
+<!-- UID1 = *(0x1FFF_F7E8)
+UID2 = *(0x1FFF_F7EC)
+UID3 = *(0x1FFF_F7F0) -->
+
 
 ## MM32Programmer Command List
 
@@ -132,7 +138,10 @@ Return
         {
             'MCU_ID': 196154487, 
             'CPU_INFO': 'Cortex-M0 r0p0', 
-            'DEV_ID': 2353221841
+            'DEV_ID': 2353221841,
+            'UID1': 1296904704, 
+            'UID2': 4294967112, 
+            'UID3': 4294966911
         }
     ]
 }
@@ -247,3 +256,18 @@ Return
     'data': []
 }
 ```
+
+### 6 readMem32
+cmd:
+```cmd
+"{'command': 'readMem32', 'index': 0, 'address': 536868840, 'length': 3}"
+```
+address: 要写入的地址</br>
+length：要读取的长度，例如读取UID时，需要顺序读取3个UID1~3寄存器, 此时赋值为3
+
+### 7 writeMem32
+cmd:
+```cmd
+"{'command': 'writeMem32', 'index': 0, 'address': 1073881092, 'data': 1164378403}"
+```
+0x40022004 = 0x45670123

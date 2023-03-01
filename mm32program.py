@@ -125,6 +125,10 @@ class LinkerObject(returnJson):
             # Get DEVinfo
             self.M0_DEV_ID = self.xlk.read_mem_U32(0x40013400, 1)[0]
             self.Mx_DEV_ID = self.xlk.read_mem_U32(0x40007080, 1)[0]
+            #  # Get UID
+            # self.UID1 = self.xlk.read_mem_U32(0x1FFFF7E8, 1)[0]
+            # self.UID2 = self.xlk.read_mem_U32(0x1FFFF7EC, 1)[0]
+            # self.UID3 = self.xlk.read_mem_U32(0x1FFFF7F0, 1)[0]
         except Exception as e:
             self.daplink.close()
             return 1
@@ -211,14 +215,22 @@ class LinkerObject(returnJson):
                     else:
                         # print("[info]: DEV_ID = 0x%X" % self.Mx_DEV_ID)
                         devid = self.Mx_DEV_ID
+                    
                     mcuInfo_dict = {
                         'MCU_ID' : 0,
                         'CPU_INFO' : '',
                         'DEV_ID' : 0
+                        # 'UID1': 0,
+                        # 'UID2': 0,
+                        # 'UID3': 0
                     }
                     mcuInfo_dict['MCU_ID'] = self.MCUID
                     mcuInfo_dict['CPU_INFO'] = cpuinfostr
                     mcuInfo_dict['DEV_ID'] = devid
+                    # mcuInfo_dict['UID1'] = self.UID1
+                    # mcuInfo_dict['UID2'] = self.UID2
+                    # mcuInfo_dict['UID3'] = self.UID3
+                    
                     self.owndict['data'].append(mcuInfo_dict)
                     self.setCode(0)
                     self.appendMes("[info] Target connnect Pass\n")
@@ -242,8 +254,8 @@ class LinkerObject(returnJson):
             except Exception as e:
                 self.appendMes("[info] Earse Failed\n")
                 self.setCode(1)
-            self.xlk.reset()
-            self.xlk.close()
+                self.xlk.reset()
+                self.xlk.close()
         else:
             self.appendMes("[error] Linker connect Failed\n")
             self.setCode(1)
@@ -290,8 +302,8 @@ class LinkerObject(returnJson):
             except Exception as e:
                 self.appendMes("[error] Read Failed")
                 self.setCode(1)
-        self.xlk.reset()
-        self.xlk.close()
+            self.xlk.reset()
+            self.xlk.close()
         print(self.owndict)
 
     ############################################################################
@@ -309,8 +321,40 @@ class LinkerObject(returnJson):
             except Exception as e:
                 self.appendMes("[error] Write Failed")
                 self.setCode(1)
-        self.xlk.reset()
-        self.xlk.close()
+            self.xlk.reset()
+            self.xlk.close()
+        print(self.owndict)
+
+    def readMem32(self, addr, cont):
+        self.setCode(0)
+        if not self._connectDAP():
+            try:
+                code = self.xlk.read_mem_U32(addr, cont)
+                self.owndict['data'] = code
+                self.appendMes("[info] readMem32 Success")
+            except Exception as e:
+                self.appendMes("[error] readMem32 Failed")
+                self.setCode(1)
+            self.xlk.reset()
+            self.xlk.close()
+        print(self.owndict)
+
+    def writeMem32(self, addr, dat):
+        self.setCode(0)
+        if not self._connectDAP():
+            try:
+                try:
+                    self.dev = device.Devices[self.target](self.xlk)
+                except Exception as e:
+                    self.appendMes("[error] Device connect Failed")
+                    self.setCode(1)
+                code = self.xlk.write_U32(addr, dat)
+                self.appendMes("[info] writeMem32 Success")
+            except Exception as e:
+                self.appendMes("[error] writeMem32 Failed")
+                self.setCode(1)
+            self.xlk.reset()
+            self.xlk.close()
         print(self.owndict)
 
 # def parse_args():
@@ -407,6 +451,16 @@ def jsonhandle(jsonText):
         linker.oprateAddr = jsonText['address']
         linker.oprateSize = jsonText['length']
         linker.earseSector()
+    if (cmd == 'readMem32'):
+        linker.setSelectIdx(jsonText['index'])
+        addr = jsonText['address']
+        cnt = jsonText['length']
+        linker.readMem32(addr, cnt)
+    if (cmd == 'writeMem32'):
+        linker.setSelectIdx(jsonText['index'])
+        addr = jsonText['address']
+        dat = jsonText['data']
+        linker.writeMem32(addr, dat)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,6 @@
 import collections
 
+from . import MM32
 from . import MM32F0010
 from . import MM32F0020
 from . import MM32F0x40
@@ -33,6 +34,7 @@ Devices = collections.OrderedDict([
     ('MM32F3270',    MM32F3270.MM32F3270),
     ('MM32F5270',    MM32F5270.MM32F5270),
     ('MM32F5280',    MM32F5270.MM32F5270),
+    ('MM32',         MM32.MM32),
     # ('STM32F103C8',    STM32F103.STM32F103C8),
     # ('STM32F103C8-LS', STM32F103_LS.STM32F103C8),
     # ('STM32F103RC',    STM32F103.STM32F103RC),
