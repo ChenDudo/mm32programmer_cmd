@@ -3,3 +3,5 @@ build/
 dist/
 *.ini
 *.json
+venv/
+Temp/
