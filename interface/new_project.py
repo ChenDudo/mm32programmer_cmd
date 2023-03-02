@@ -1,7 +1,7 @@
 import os
 from PyQt5.QtWidgets import QDialog, QFileDialog, QMessageBox
 from PyQt5.QtGui import QRegExpValidator, QKeyEvent
-from PyQt5.QtCore import QRegExp, Qt
+from PyQt5.QtCore import QRegExp, Qt, pyqtSlot
 from UI.Ui_newProject import Ui_Dialog
 from interface.access_dll import AccessDll
 from interface.project_base_class import ProjectInfo
@@ -13,11 +13,10 @@ class NewProjectDia(QDialog, Ui_Dialog):
         self.initUI()
 
     def initUI(self):
-        self.buttonBox.accepted.connect(self.accept)
-        self.buttonBox.rejected.connect(self.reject)
         self.timeFrequency.setCurrentIndex(1)
         self.resetModel.setCurrentIndex(2)
         self.proName.setFocus() # 指定焦点(光标)，防止回车关闭页面
+        self.state = False
 
         # 从dll获取芯片信息
         self.info = self.getSeriesAndPart()
@@ -54,6 +53,20 @@ class NewProjectDia(QDialog, Ui_Dialog):
         self.seriesName.currentIndexChanged.connect(self.showPartName)
         self.partModel.currentIndexChanged.connect(self.showFlashSize)
         self.selectFile.clicked.connect(self.openFile)
+
+    @pyqtSlot()
+    def on_ok_clicked(self):
+        if self.proName.text() != "" and self.filePath.text() != "":
+            self.state = True
+            self.accept()
+        else:
+            self.state = True
+            QMessageBox.warning(self, 'Warning', 'The project name and code file cannot be empty!', QMessageBox.Yes)
+            self.proName.setFocus()
+    
+    @pyqtSlot()
+    def on_cancel_clicked(self):
+        self.close()
 
     def getSeriesAndPart(self) -> dict: # 系列确定开发板型号和内核，开发板型号确定flash大小(算法不好，系列不能重复出现，否则会覆盖之前的数据)
         seriesInfo = {}
@@ -113,14 +126,13 @@ class NewProjectDia(QDialog, Ui_Dialog):
         self.memorySize.setText(str(flash))
 
     def openFile(self):
-        options = QFileDialog().Options()
-        options |= QFileDialog.DontUseNativeDialog
-        fileName, _ = QFileDialog.getOpenFileName(self, "select file", "C:\\", "Inter Hex files(*.hex);;Binary files(*.bin);;Motorola files(*.s19);;All files(*.*)")
+        fileName, _ = QFileDialog.getOpenFileName(self, "select file", "C:\\", "Inter Hex files(*.hex);;Binary files(*.bin);;Motorola files(*.s19)")
         if os.path.exists(fileName):
             self.filePath.setText(fileName)
         else:
             pass
 
+    # 获取当前treewidget信息
     def getProjectInfo(self) -> ProjectInfo:
         info = ProjectInfo()
         info.projectName = self.proName.text()
@@ -143,15 +155,33 @@ class NewProjectDia(QDialog, Ui_Dialog):
         info.stopMode = self.stop.isChecked()
 
         return info
+    
+    def setProjectInfo(self, info: ProjectInfo):
+        self.proName.setText(info.projectName)
+        self.textEdit.setText(info.projectDesp)
+        self.programPart.setCurrentText(info.programmer)
+        self.chipLink.setCurrentText(info.linkMode)
+        self.resetModel.setCurrentText(info.resetType)
+        self.timeFrequency.setCurrentText(info.frequence)
+        self.seriesName.setCurrentText(info.series)
+        self.partModel.setCurrentText(info.partName)
+        self.filePath.setText(info.codeFile)
+
+        self.data0.setText(info.data0)
+        self.data1.setText(info.data1)
+        self.hdDog.setChecked(True if info.watchDog == "Hardware watchdog" else False)
+        self.sfDog.setChecked(True if info.watchDog == "Software watchdog" else False)
+        self.standby.setChecked(info.standbyMode)
+        self.stop.setChecked(info.stopMode)
 
     def keyPressEvent(self, event: QKeyEvent):
         key = event.key()
         if key == Qt.Key_Enter or key == Qt.Key_Return:
             return
     
-    def closeEvent(self, event):
-        reply = QMessageBox.question(self, 'Warning', '确认退出？', QMessageBox.Yes, QMessageBox.No)
-        if reply == QMessageBox.Yes:
-            event.accept()
-        else:
-            event.ignore()
+    # def closeEvent(self, event):
+    #     reply = QMessageBox.question(self, 'Warning', '确认退出？', QMessageBox.Yes, QMessageBox.No)
+    #     if reply == QMessageBox.Yes:
+    #         event.accept()
+    #     else:
+    #         event.ignore()
