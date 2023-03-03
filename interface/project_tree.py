@@ -9,6 +9,7 @@ from intelhex import IntelHex
 class ProjectTree(QTreeWidget):
     sigSaveProject = pyqtSignal()
     sigSaveProjectAs = pyqtSignal()
+    sigCloseAll = pyqtSignal()
     def __init__(self, parent=None):
         super().__init__(parent)
         self.initUI()
@@ -156,7 +157,6 @@ class ProjectTree(QTreeWidget):
         self.sigSaveProjectAs.emit()
 
     def selectAll(self):
-        # flashSize = self.flashSize.text(1)[:len(self.flashSize.text(1)) - 5]
         cnt = self.sectors.childCount()
         for i in range(cnt):
             ck = self.itemWidget(self.sectors.child(i), 1)
@@ -177,10 +177,21 @@ class ProjectTree(QTreeWidget):
     def closeAll(self): # 清空tree
         info = ProjectInfo()
         self.showConfiguration(info)
+        self.sigCloseAll.emit() # 清空flash存储信息
 
-    #返回option和sector部分的内容，该部分在tree可修改
+    #返回当前tree中显示的信息
     def getTreeInfo(self) -> ProjectInfo:
         info = ProjectInfo()
+        info.projectName = self.projectName.text(1)
+        info.projectDesp = self.projectDesp.text(1)
+        info.programmer = self.programModel.text(1)
+        info.linkMode = self.linkMode.text(1)
+        info.resetType = self.resetType.text(1)
+        info.frequence = self.clockFrequcy.text(1)
+        info.core = self.chipCore.text(1)
+        info.partName = self.chipName.text(1)
+        info.flashSize = self.flashSize.text(1)[:len(self.flashSize.text(1)) - 5]
+        info.codeFile = self.codeFile.text(1)
         info.data0 = self.data0Text.text()
         info.data1 = self.data1Text.text()
         info.watchDog = self.watchDogCB.currentText()
@@ -189,8 +200,8 @@ class ProjectTree(QTreeWidget):
         info.sectors = self.getSectorsChoice()
         return info
 
-    # 新建或打开项目在tree显示信息
-    def showConfiguration(self, info: ProjectInfo):
+    # 在tree显示信息或清空tree， state表示是否删除原扇区，默认删除（False）
+    def showConfiguration(self, info: ProjectInfo, state = False):
         self.projectName.setText(1, info.projectName)
         self.projectDesp.setText(1, info.projectDesp)
         self.chipName.setText(1, info.partName)
@@ -202,8 +213,6 @@ class ProjectTree(QTreeWidget):
         self.clockFrequcy.setText(1, info.frequence)
         self.chipCore.setText(1, info.core)
 
-        # self.codeFile.setToolTip(1, info.codeFile)
-
         self.dataCK.setText(1, self.dataCheckSum(info.codeFile))
         self.fileCRC.setText(1, self.fileCalCRC(info.codeFile))
 
@@ -211,6 +220,10 @@ class ProjectTree(QTreeWidget):
         self.data1Text.setText(info.data1)
         self.ck1.setChecked(info.standbyMode)
         self.ck2.setChecked(info.stopMode)
+
+        # 可悬浮显示内容
+        self.chipName.setToolTip(1, info.partName)
+        self.codeFile.setToolTip(1, info.codeFile)
         
         if info.hWatchDog:
             self.watchDogCB.setCurrentIndex(0)
@@ -219,18 +232,21 @@ class ProjectTree(QTreeWidget):
         else:
             self.watchDogCB.setCurrentIndex(-1)
 
-        # 清空sector内容
-        for i in range(self.sectors.childCount()):
-            item = self.sectors.child(0)
-            self.sectors.removeChild(item)
-
-        if info.flashSize == "": # 关闭项目时，清空内容
-            self.flashSize.setText(1, "")
+        if state:
+            pass
         else:
-            if info.sectors != "":
-                self.setSectorsChoice(info.sectors, int(info.flashSize))
+            # 清空sector内容
+            for i in range(self.sectors.childCount()):
+                item = self.sectors.child(0)
+                self.sectors.removeChild(item)
+
+            if info.flashSize == "": # 关闭项目时，清空内容
+                self.flashSize.setText(1, "")
             else:
-                self.setSectorsChoice("", int(info.flashSize))
+                if info.sectors != "":
+                    self.setSectorsChoice(int(info.flashSize), info.sectors)
+                else:
+                    self.setSectorsChoice(int(info.flashSize))
 
     # 读取ini的信息，并展示到treewidget
     def openProject(self, filePath: str) -> ProjectInfo:
@@ -264,6 +280,7 @@ class ProjectTree(QTreeWidget):
 
         return info
     
+    # 获取tree的扇区勾选情况
     def getSectorsChoice(self):
         cnt = self.sectors.childCount()
         sectors = ""
@@ -272,7 +289,8 @@ class ProjectTree(QTreeWidget):
             sectors += "1" if ck.isChecked() else "0"
         return sectors
     
-    def setSectorsChoice(self, sectors, size):
+    # 向tree写入扇区的勾选情况
+    def setSectorsChoice(self, size, sectors = ""):
         font = QFont()
         font.setPointSize(8)
         cnt = 0
@@ -293,6 +311,7 @@ class ProjectTree(QTreeWidget):
             self.setItemWidget(sector, 1, ck)
             cnt += 1
     
+    # code file data checksum
     def dataCheckSum(self, filePath: str) -> str:
         if filePath == "":
             return ""
@@ -314,6 +333,7 @@ class ProjectTree(QTreeWidget):
 
         return "0x{:08X}".format(checksum & 0xFFFFFFFF)
 
+    # code file crc
     def fileCalCRC(self, filePath: str) -> str:
         if filePath == "":
             return ""

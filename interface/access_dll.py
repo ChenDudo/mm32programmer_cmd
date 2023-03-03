@@ -2,6 +2,8 @@ import json
 from ctypes import *
 
 BUFF_SIZE = 256
+
+
 class AccessDll():
 
     class TRSystemConfig(Structure):
@@ -37,43 +39,39 @@ class AccessDll():
         else:
             return buf
 
-    # def getSeriesAndPart(self) -> dict: # 系列确定开发板型号和内核，开发板型号确定flash大小(算法不好，系列不能重复出现，否则会覆盖之前的数据)
-    #     seriesInfo = {}
-    #     dataCenter = AccessDll("Temp/dataCenter.dll")
-    #     allSeries = dataCenter.print_json_to_str(dataCenter.get_series_list())
-    #     seriesList = allSeries["data"]
-    #     for i in range(len(seriesList)): # 获取全系列名
-    #         seriesInfo[seriesList[i]["seriesName"]] = {} # core,part
+    # 系列确定芯片型号和内核，再由芯片确定flash大小(算法不好，系列得顺序出现，不能重复出现，否则会覆盖之前的数据)
+    def getSeriesAndPart(self) -> dict: 
+        seriesInfo = {}
+        allSeries = self.print_json_to_str(self.get_series_list())
+        seriesList = allSeries["data"]
+        for i in range(len(seriesList)): # 获取全系列名
+            seriesInfo[seriesList[i]["seriesName"]] = {} # core,part
 
-    #     allChips = dataCenter.print_json_to_str(dataCenter.get_chip_list_for_all())
-    #     chipsList = allChips["data"]
-    #     length = len(chipsList)
-    #     chips = {} #partname:flashsize
-    #     tempSeries = chipsList[0]["seriesName"]
-    #     for i in range(length):
-    #         series = chipsList[i]["seriesName"]
-    #         if tempSeries != series:
-    #             seriesInfo[tempSeries]["core"] = chipsList[i-1]["core"]
-    #             seriesInfo[tempSeries]["part"] = chips
-    #             chips = {} 
-    #         tempSeries = series
-    #         partName = chipsList[i]["partName"]
-    #         flashSize = chipsList[i]["flashSize"]
-    #         chips[partName] = flashSize
-    #     #将最后的芯片信息填入
-    #     seriesInfo[tempSeries]["core"] = chipsList[length - 1]["core"]
-    #     seriesInfo[tempSeries]["part"] = chips
+        allChips = self.print_json_to_str(self.get_chip_list_for_all())
+        chipsList = allChips["data"]
+        length = len(chipsList)
+        chips = {} #partname:flashsize
+        tempSeries = chipsList[0]["seriesName"]
+        for i in range(length):
+            series = chipsList[i]["seriesName"]
+            if tempSeries != series:
+                seriesInfo[tempSeries]["core"] = chipsList[i-1]["core"]
+                seriesInfo[tempSeries]["part"] = chips
+                chips = {} 
+            tempSeries = series
+            partName = chipsList[i]["partName"]
+            flashSize = chipsList[i]["flashSize"]
+            chips[partName] = flashSize
+        #将最后的芯片信息填入
+        seriesInfo[tempSeries]["core"] = chipsList[length - 1]["core"]
+        seriesInfo[tempSeries]["part"] = chips
 
-    #     #处理没有part的series
-    #     info = {}
-    #     for key, value in seriesInfo.items():
-    #         if len(value) != 0:
-    #             info[key] = value
-    #         else:
-    #             pass
+        #处理没有信息的key值
+        for k in list (seriesInfo.keys()) :
+            if not seriesInfo[k] :
+                del seriesInfo[k]
         
-    #     return info
-
+        return seriesInfo
 
 # if __name__ == "__main__":
 #     dataCenter = AccessDll("Temp/dataCenter.dll")
