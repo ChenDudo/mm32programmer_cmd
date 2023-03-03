@@ -23,6 +23,7 @@ class ReadFlash(QWidget):
         self.table = QTableWidget(self)
         layout.addWidget(self.table)
         self.setLayout(layout)
+        layout.setContentsMargins(0,0,0,0)
 
         # 记录当前读取的文件
         self.file = "" # 为了记住flash当前展示的是那个文件，主界面加载或拖拽文件时，也会更新该参数，方便各字节显示

@@ -177,10 +177,6 @@ class ProjectTree(QTreeWidget):
     def closeAll(self): # 清空tree
         info = ProjectInfo()
         self.showConfiguration(info)
-        cnt = self.sectors.childCount()
-        for i in range(cnt):
-            item = self.sectors.child(0)
-            self.sectors.removeChild(item)
 
     #返回option和sector部分的内容，该部分在tree可修改
     def getTreeInfo(self) -> ProjectInfo:
@@ -193,7 +189,7 @@ class ProjectTree(QTreeWidget):
         info.sectors = self.getSectorsChoice()
         return info
 
-    #新建项目在tree显示信息
+    # 新建或打开项目在tree显示信息
     def showConfiguration(self, info: ProjectInfo):
         self.projectName.setText(1, info.projectName)
         self.projectDesp.setText(1, info.projectDesp)
@@ -223,54 +219,50 @@ class ProjectTree(QTreeWidget):
         else:
             self.watchDogCB.setCurrentIndex(-1)
 
-        font = QFont()
-        font.setPointSize(7)
-        if info.flashSize == "":
+        # 清空sector内容
+        for i in range(self.sectors.childCount()):
+            item = self.sectors.child(0)
+            self.sectors.removeChild(item)
+
+        if info.flashSize == "": # 关闭项目时，清空内容
             self.flashSize.setText(1, "")
         else:
-            self.setSectorsChoice("", int(info.flashSize))
-
-    #展示项目信息
-    def openProject(self):
-        filePath, _ = QFileDialog.getOpenFileName(None, "open project", "C:\\", 'MM Programmer Config File(*.ini)')
-        if os.path.exists(filePath):
-            settings = QSettings(filePath, QSettings.IniFormat)
-            size = int(settings.value("Base/flashSize"))
-            codeFile = str(settings.value("Base/filePath"))
-
-            self.projectName.setText(1, settings.value("Base/projectName"))
-            self.projectDesp.setText(1, settings.value("Base/descript"))
-            self.chipCore.setText(1, settings.value("Base/core"))
-            self.chipName.setText(1, settings.value("Base/partName"))
-            self.flashSize.setText(1, str(settings.value("Base/flashSize")) + "KByte")
-            self.codeFile.setText(1, codeFile)
-            self.dataCK.setText(1, self.dataCheckSum(codeFile))
-            self.fileCRC.setText(1, self.fileCalCRC(codeFile))
-
-            self.programModel.setText(1, settings.value("Programmer/programmer"))
-            self.linkMode.setText(1, settings.value("Programmer/connectType"))
-            self.resetType.setText(1, settings.value("Programmer/resetType"))
-            self.clockFrequcy.setText(1, settings.value("Programmer/frequence"))
-
-            self.data0Text.setText(settings.value("Option/data0"))
-            self.data1Text.setText(settings.value("Option/data1"))
-            self.watchDogCB.setCurrentText(settings.value("Option/watchDog"))
-            ck1 = settings.value("Option/standByReset")
-            ck2 = settings.value("Option/stopReset")
-            if ck1 == "true":
-                self.ck1.setChecked(True)
+            if info.sectors != "":
+                self.setSectorsChoice(info.sectors, int(info.flashSize))
             else:
-                self.ck1.setChecked(False)
-            if ck2 == "true":
-                self.ck2.setChecked(True)
-            else:
-                self.ck2.setChecked(False)
+                self.setSectorsChoice("", int(info.flashSize))
 
-            self.setSectorsChoice(settings.value("Sectors/Sector"), size)
+    # 读取ini的信息，并展示到treewidget
+    def openProject(self, filePath: str) -> ProjectInfo:
+        info = ProjectInfo()
+        self.closeAll() # 装载项目前清空tree，或提示是否需要保存内容
+        settings = QSettings(filePath, QSettings.IniFormat)
+        info.projectName = settings.value("Base/projectName")
+        info.projectDesp = settings.value("Base/descript")
+        info.series = settings.value("Base/familyName")
+        info.partName = settings.value("Base/partName")
+        info.core = settings.value("Base/core")
+        info.flashSize = settings.value("Base/flashSize")
+        info.codeFile = settings.value("Base/filePath")
 
-            return filePath, codeFile, size
-        else:
-            return "", "", 0
+        info.programmer = settings.value("Programmer/programmer")
+        info.linkMode = settings.value("Programmer/connectType")
+        info.resetType = settings.value("Programmer/resetType")
+        info.frequence = settings.value("Programmer/frequence")
+
+        info.data0 = settings.value("Option/data0")
+        info.data1 = settings.value("Option/data1")
+        info.watchDog = settings.value("Option/watchDog")
+        info.hWatchDog = True if info.watchDog == "Hardware watchdog" else False
+        info.sWatchDog = True if info.watchDog == "Software watchdog" else False
+        info.standbyMode = True if settings.value("Option/standByReset") == "true" else False
+        info.stopMode = True if settings.value("Option/stopReset") == "true" else False
+
+        info.sectors = settings.value("Sectors/Sector")
+
+        self.showConfiguration(info)
+
+        return info
     
     def getSectorsChoice(self):
         cnt = self.sectors.childCount()
