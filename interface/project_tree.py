@@ -196,7 +196,7 @@ class ProjectTree(QTreeWidget):
         info.data1 = self.data1Text.text()
         info.watchDog = self.watchDogCB.currentText()
         info.standbyMode = self.ck1.isChecked()
-        info.stopMode = self.ck2.isCheckable()
+        info.stopMode = self.ck2.isChecked()
         info.sectors = self.getSectorsChoice()
         return info
 
@@ -255,7 +255,6 @@ class ProjectTree(QTreeWidget):
         settings = QSettings(filePath, QSettings.IniFormat)
         info.projectName = settings.value("Base/projectName")
         info.projectDesp = settings.value("Base/descript")
-        info.series = settings.value("Base/familyName")
         info.partName = settings.value("Base/partName")
         info.core = settings.value("Base/core")
         info.flashSize = settings.value("Base/flashSize")

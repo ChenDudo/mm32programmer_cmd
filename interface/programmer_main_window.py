@@ -21,39 +21,64 @@ class Programmer(QMainWindow, Ui_MainWindow):
         self.splitter_2.setStretchFactor(0, 8)
         self.splitter_2.setStretchFactor(1, 2)
 
+        # 信息和状态
+        self.info = ProjectInfo() # 装载项目内容
+        self.ini = "" # 记录装载的项目名
+        self.state = False # 是否装载项目是否修改
+
         # 展示初始状态栏
         self.showStatue()
 
-        # 其他控件触发的动作同主界面
+        # 动作初始状态
+        self.disableFunction()
+
+        self.erasureChip.setDisabled(True)
+        self.programmeChip.setDisabled(True)
+        self.unlockChip.setDisabled(True)
+        self.readChip.setDisabled(True)
+        self.writeChip.setDisabled(True)
+
         self.flash.sigOpenFileDia.connect(self.on_loadProgrammingFile_triggered)
         self.flash.sigSaveFile.connect(self.on_saveProgrammingFile_triggered)
         self.treeWidget.sigSaveProject.connect(self.on_saveProject_triggered)
         self.treeWidget.sigSaveProjectAs.connect(self.on_saveProjectAs_triggered)
-        self.treeWidget.sigCloseAll.connect(self.restoreFlashDefault)
+        self.treeWidget.sigCloseAll.connect(self.restoreDefault)
 
     @pyqtSlot()
     def on_openProject_triggered(self): # 装载项目的槽函数(函数名固定)，装载ini信息到treewidget
+        self.judgeToSave(self.openProjectFunc)
+
+    def openProjectFunc(self):
         filePath, _ = QFileDialog.getOpenFileName(None, "open project", "C:\\", 'MM Programmer Config File(*.ini)')
         if os.path.exists(filePath):
             info = self.treeWidget.openProject(filePath)
+            self.ini = filePath
+            self.info = info
             if os.path.exists(info.codeFile): # 谨防装载项目的code file已不存在
                 self.loadProgrammerFile(info.codeFile, int(info.flashSize))
+                self.textBrowser.append(f"load project--->{filePath} Success")
             else:
                 self.treeWidget.codeFile.setText(1, "")
                 self.textBrowser.append(f"data file does not exist--->{info.codeFile} Fail")
-            self.textBrowser.append(f"load project--->{filePath} Success")
+            self.enableFunction()
         else:
             pass
 
     @pyqtSlot()
     def on_newProject_triggered(self): # 新建项目，展示项目信息到treewidget
-        #QMessageBox.question(self, 'TIPS', 'Whether to save the current project?', QMessageBox.Yes | QMessageBox.No)
+        self.judgeToSave(self.newProjectFunc)
+
+    def newProjectFunc(self):
         newPro = NewProjectDia(self)
         while newPro.exec_():
             if newPro.state:
                 info = newPro.getProjectInfo()
                 self.treeWidget.showConfiguration(info)
                 self.loadProgrammerFile(info.codeFile, int(info.flashSize))
+                self.enableFunction()
+                self.ini = ""
+                self.info = ProjectInfo()
+                self.state = False
                 break
             else:
                 pass
@@ -93,6 +118,9 @@ class Programmer(QMainWindow, Ui_MainWindow):
         if filePath != "": # 谨防点击保存，但项目名为空或直接关闭页面的情况
             info = self.treeWidget.getTreeInfo()
             self.saveConfigInfo(filePath, info)
+            # 保存后，相当于当前装载项目
+            self.ini = filePath
+            self.info = info
             self.textBrowser.append(f"save project--->{filePath} Success")
         else:
             pass
@@ -149,14 +177,21 @@ class Programmer(QMainWindow, Ui_MainWindow):
         self.statusBar().addPermanentWidget(chip, stretch=2)
         self.statusBar().addPermanentWidget(lockIcon, stretch=6)
 
-    # 将flash恢复为默认值
-    def restoreFlashDefault(self):
+    # 将flash恢复为默认值，主窗口记录的数据清空，关闭部分功能
+    def restoreDefault(self):
         self.flash.file = ""
         self.flash.flashSize = 64
         self.flash.act_bit8.setChecked(True)
         self.flash.act_bit16.setChecked(False)
         self.flash.act_bit32.setChecked(False)
         self.flash.insertTable()
+
+        # 清空装载的内容
+        self.ini = ""
+        self.info = ProjectInfo()
+        self.state = False
+
+        self.disableFunction()
 
     # 保存tree信息为ini文件
     def saveConfigInfo(self, path: str, info: ProjectInfo):
@@ -238,9 +273,98 @@ class Programmer(QMainWindow, Ui_MainWindow):
             data = self.flash.parseFile(filePath, size = self.flash.flashSize, state = state)
             self.flash.insertTable(data, state = state)
 
+    # 监测装载的项目是否被修改，在关闭tree，新建项目，关闭整个窗口，监测是否变化，弹窗是否保存
+    def monitorLoadProject(self) -> ProjectInfo:
+        info = self.treeWidget.getTreeInfo()
+        if info.projectName != self.info.projectName:
+            self.state = True
+        elif info.projectDesp != self.info.projectDesp:
+            self.state = True
+        elif info.programmer != self.info.programmer:
+            self.state = True
+        elif info.linkMode != self.info.linkMode:
+            self.state = True
+        elif info.resetType != self.info.resetType:
+            self.state = True
+        elif info.frequence != self.info.frequence:
+            self.state = True
+        elif info.partName != self.info.partName:
+            self.state = True
+        elif info.codeFile != self.info.codeFile:
+            self.state = True
+        elif info.data0 != self.info.data0:
+            self.state = True
+        elif info.data1 != self.info.data1:
+            self.state = True
+        elif info.watchDog != self.info.watchDog:
+            self.state = True
+        elif info.standbyMode != self.info.standbyMode:
+            self.state = True
+        elif info.stopMode != self.info.stopMode:
+            self.state = True
+        elif info.sectors != self.info.sectors:
+            self.state = True
+        else:
+            self.state = False
+        
+        return info
+
+    # 新建项目或装载项目后，开启部分功能
+    def enableFunction(self):
+        self.modifyProject.setDisabled(False)
+        self.saveProject.setDisabled(False)
+        self.saveProjectAs.setDisabled(False)
+        self.loadProgrammingFile.setDisabled(False)
+        self.saveProgrammingFile.setDisabled(False)
+        # self.flash.act_load_file.setDisabled(False)
+        # self.flash.act_saveas_file.setDisabled(False)
+        # self.flash.sigOpenFileDia.connect(self.on_loadProgrammingFile_triggered)
+        # self.flash.sigSaveFile.connect(self.on_saveProgrammingFile_triggered)
+        # self.treeWidget.sigSaveProject.connect(self.on_saveProject_triggered)
+        # self.treeWidget.sigSaveProjectAs.connect(self.on_saveProjectAs_triggered)
+        # self.treeWidget.sigCloseAll.connect(self.restoreDefault)
+    
+    def disableFunction(self):
+        self.modifyProject.setDisabled(True)
+        self.saveProject.setDisabled(True)
+        self.saveProjectAs.setDisabled(True)
+        self.loadProgrammingFile.setDisabled(True)
+        self.saveProgrammingFile.setDisabled(True)
+        # self.flash.act_load_file.setDisabled(True)
+        # self.flash.act_saveas_file.setDisabled(True)
+        # self.flash.sigOpenFileDia.disconnect()
+        # self.flash.sigSaveFile.disconnect()
+        # self.treeWidget.sigSaveProject.disconnect()
+        # self.treeWidget.sigSaveProjectAs.disconnect()
+        # self.treeWidget.sigCloseAll.disconnect()
+    
+    # 当点击新建项目、装载项目时，判断当前项目是否需要保存；参数func为函数
+    def judgeToSave(self, func):
+        if self.ini != "": # 当装载项目
+            moInfo = self.monitorLoadProject()
+            if self.state: # 装载项目被修改
+                reply = QMessageBox.question(self, 'TIPS', 'Whether to save the current loading project?', QMessageBox.Yes | QMessageBox.No)
+                if reply == QMessageBox.Yes: # 保存修改的项目
+                    self.saveConfigInfo(self.ini, moInfo)
+                    self.info = moInfo
+                    self.textBrowser.append(f"save the modified project--->{self.ini} Success")
+                else: # 不保存，继续其他操作
+                    func()
+            else: # 没有被修改，继续其他操作
+                func()
+        elif self.ini == "" and self.treeWidget.projectName.text(1) != "": # 有新建项目时
+            reply = QMessageBox.question(self, 'TIPS', 'Whether to save the current new project?', QMessageBox.Yes | QMessageBox.No)
+            if reply == QMessageBox.Yes: # 保存新建项目
+                self.on_saveProject_triggered()
+            else: # 不保存，继续其他操作
+                func()
+        else: # 当前没有装载项目也没有新建项目，继续其他操作
+            func()
+
 
 # todo: 
-#   1.当新建项目或装载其他项目时，监测当前装载的项目是否改动，若改动则提示是否保存；
-#   2.修改项目后，如果芯片型号没变则之前的扇区选择不变，否则扇区全选；
+#   1.当新建项目或装载其他项目时，监测当前装载的项目是否改动，若改动则提示是否保存；ok
+#   2.修改项目后，如果芯片型号没变则之前的扇区选择不变，否则扇区全选；ok
 #   3.保存项目，如果是装载项目，并且没有改变则保存项目功能为灰色，若修改了装载的项目
 #     和新建项目，可以点保存功能，并且替换其他需要提示是否保存；（线程监测？）
+#   4.其他控件的右击菜单发出的信号，没有相应环境应该为灰色
