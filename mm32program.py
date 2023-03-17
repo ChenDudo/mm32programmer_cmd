@@ -22,6 +22,18 @@ import xlink
 from pyocd.probe import aggregator
 from pyocd.coresight import dap, ap, cortex_m
 
+
+FLASH_KEYR_addr     =  (0x40022000 + 0x04)
+FLASH_OPTKEYR_addr  =  (0x40022000 + 0x08)
+FLASH_SR_addr       =  (0x40022000 + 0x0C)
+FLASH_CR_addr       =  (0x40022000 + 0x10)
+FLASH_AR_addr       =  (0x40022000 + 0x14)
+FLASH_CR_OPTWRE     =  (1 << 9)
+FLASH_CR_LOCK       =  (1 << 7)
+FLASH_CR_STRT       =  (1 << 6)
+FLASH_CR_OPTER      =  (1 << 5)
+FLASH_CR_OPTPG      =  (1 << 4)
+
 def get_path():
     return os.getcwd()      #.replace('\\','/')
 #     if getattr(sys, 'frozen', False):
@@ -325,12 +337,12 @@ class LinkerObject(returnJson):
             self.xlk.close()
         print(self.owndict)
 
-    def readMem32(self, addr, cont):
+    def readMem32(self, addr, count = 1):
         self.setCode(0)
         if not self._connectDAP():
             try:
-                code = self.xlk.read_mem_U32(addr, cont)
-                self.owndict['data'] = code
+                readadr = addr
+                self.owndict['data'] = self.xlk.read_mem_U32(readadr, count)
                 self.appendMes("[info] readMem32 Success")
             except Exception as e:
                 self.appendMes("[error] readMem32 Failed")
@@ -352,6 +364,100 @@ class LinkerObject(returnJson):
                 self.appendMes("[info] writeMem32 Success")
             except Exception as e:
                 self.appendMes("[error] writeMem32 Failed")
+                self.setCode(1)
+            self.xlk.reset()
+            self.xlk.close()
+        print(self.owndict)
+
+    def _optEarse(self, addr):
+        read_Flash_CR = self.xlk.read_U32(FLASH_CR_addr)
+        # unlock flash
+        if read_Flash_CR | FLASH_CR_LOCK:
+            self.xlk.write_U32(FLASH_KEYR_addr, 0x45670123)
+            self.xlk.write_U32(FLASH_KEYR_addr, 0xCDEF89AB)
+        # unlock OptionByte
+        self.xlk.write_U32(FLASH_OPTKEYR_addr, 0x45670123)
+        self.xlk.write_U32(FLASH_OPTKEYR_addr, 0xCDEF89AB)
+        # set FLASH_AR
+        self.xlk.write_U32(FLASH_AR_addr, addr)
+        # enable optER
+        read_Flash_CR = self.xlk.read_U32(FLASH_CR_addr)
+        self.xlk.write_U16(FLASH_CR_addr, FLASH_CR_OPTER | FLASH_CR_STRT | read_Flash_CR)
+        read_Flash_SR = self.xlk.read_U32(FLASH_SR_addr)
+        while (read_Flash_SR & 0x0001):
+            read_Flash_SR = self.xlk.read_U32(FLASH_SR_addr)
+        self.xlk.write_U16(FLASH_SR_addr, 1 << 5)
+
+    def _readU32Dat(self, addr, count = 1):
+        readadr = addr
+        readdat = []
+        while count >= 1:
+            dat = self.xlk.read_U32(readadr)
+            count = count - 1
+            readadr = readadr + 4
+            readdat.append(hex(dat))
+        # readdat = self.xlk.read_mem_U32(readadr, count)
+        print("0x%08X read: " % addr, readdat)
+
+    def optionByteProgram(self, addr, dat):
+        self.setCode(0)
+        if not self._connectDAP():
+            try:
+                self._readU32Dat(0x1FFFF800, 4)
+                read_Flash_CR = self.xlk.read_U32(FLASH_CR_addr)
+                if read_Flash_CR | FLASH_CR_LOCK:
+                    print("Flash is Locked! Flash_CR = 0x%08x" % read_Flash_CR)
+                    self.xlk.write_U32(FLASH_KEYR_addr, 0x45670123)
+                    self.xlk.write_U32(FLASH_KEYR_addr, 0xCDEF89AB)
+                    read_Flash_CR = self.xlk.read_U32(FLASH_CR_addr)
+                    print("...Flash Unlock, Flash_CR = 0x%08x" % read_Flash_CR)
+                # print("\tread Flash_CR: 0x%08x" % read_Flash_CR)
+                # # unlock OptionByte
+                # print("unlock OptionByte bgein...")
+                self.xlk.write_U32(FLASH_OPTKEYR_addr, 0x45670123)
+                self.xlk.write_U32(FLASH_OPTKEYR_addr, 0xCDEF89AB)
+                read_Flash_CR = self.xlk.read_U32(FLASH_CR_addr)
+                if (read_Flash_CR & 0x00000200):
+                    print("...OPT Unlock,   Flash_CR = 0x%08x, Flash_SR = 0x%08x" % (read_Flash_CR, self.xlk.read_U32(FLASH_SR_addr)))
+
+                self.xlk.write_U32(FLASH_CR_addr, FLASH_CR_OPTPG | read_Flash_CR)
+                read_Flash_CR = self.xlk.read_U32(FLASH_CR_addr)
+                if (read_Flash_CR & 0x00000010):
+                    print("...OPTPG Set!    Flash_CR = 0x%08x" % read_Flash_CR)
+                # self.xlk.write_U32(FLASH_AR_addr, addr)
+
+                # self.xlk.write_mem_U32(addr, dat)
+                self.xlk.write_U32(addr, dat)
+
+                
+                # # disbale optPG
+                # read_Flash_CR = self.xlk.read_U32(FLASH_CR_addr)
+                # self.xlk.write_U16(FLASH_CR_addr, 0xFFFFFFEF & read_Flash_CR)
+                # print("...OPTPG clear!  Flash_CR = 0x%08x" % self.xlk.read_U32(FLASH_CR_addr))
+                
+                # # check
+                # readdat = self.xlk.read_U32(addr)
+                # if readdat != dat:
+                #     self.setCode(2)
+                #     self.appendMes("[error] ReadBack check error, read="+str(hex(readdat)))
+                # else:
+                #     self.appendMes("[info] option Byte Program Success")
+            except Exception as e:
+                self.appendMes("[error] option Byte Program Failed")
+                self.setCode(1)
+            # self.xlk.reset()
+            # self.xlk.close()
+        print(self.owndict)
+
+
+    def optionByteEarse(self, addr):
+        self.setCode(0)
+        if not self._connectDAP():
+            try:
+                self._optEarse(addr)
+                self.appendMes("[info] option Byte Earse Success")
+            except Exception as e:
+                self.appendMes("[error] option Byte Earse Failed")
                 self.setCode(1)
             self.xlk.reset()
             self.xlk.close()
@@ -454,13 +560,22 @@ def jsonhandle(jsonText):
     if (cmd == 'readMem32'):
         linker.setSelectIdx(jsonText['index'])
         addr = jsonText['address']
-        cnt = jsonText['length']
+        cnt = jsonText['cnt']
         linker.readMem32(addr, cnt)
     if (cmd == 'writeMem32'):
         linker.setSelectIdx(jsonText['index'])
         addr = jsonText['address']
         dat = jsonText['data']
         linker.writeMem32(addr, dat)
+    if (cmd == 'optWrite'):
+        linker.setSelectIdx(jsonText['index'])
+        addr = jsonText['address']
+        dat = jsonText['data']
+        linker.optionByteProgram(addr, dat)
+    if (cmd == 'optEarse'):
+        linker.setSelectIdx(jsonText['index'])
+        addr = jsonText['address']
+        linker.optionByteEarse(addr)
 
 
 if __name__ == "__main__":
