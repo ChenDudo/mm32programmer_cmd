@@ -9,6 +9,7 @@ from intelhex import IntelHex
 class ProjectTree(QTreeWidget):
     sigSaveProject = pyqtSignal()
     sigSaveProjectAs = pyqtSignal()
+    sigCloseAll = pyqtSignal()
     def __init__(self, parent=None):
         super().__init__(parent)
         self.initUI()
@@ -156,7 +157,6 @@ class ProjectTree(QTreeWidget):
         self.sigSaveProjectAs.emit()
 
     def selectAll(self):
-        # flashSize = self.flashSize.text(1)[:len(self.flashSize.text(1)) - 5]
         cnt = self.sectors.childCount()
         for i in range(cnt):
             ck = self.itemWidget(self.sectors.child(i), 1)
@@ -177,24 +177,31 @@ class ProjectTree(QTreeWidget):
     def closeAll(self): # 清空tree
         info = ProjectInfo()
         self.showConfiguration(info)
-        cnt = self.sectors.childCount()
-        for i in range(cnt):
-            item = self.sectors.child(0)
-            self.sectors.removeChild(item)
+        self.sigCloseAll.emit() # 清空flash存储信息
 
-    #返回option和sector部分的内容，该部分在tree可修改
+    #返回当前tree中显示的信息
     def getTreeInfo(self) -> ProjectInfo:
         info = ProjectInfo()
+        info.projectName = self.projectName.text(1)
+        info.projectDesp = self.projectDesp.text(1)
+        info.programmer = self.programModel.text(1)
+        info.linkMode = self.linkMode.text(1)
+        info.resetType = self.resetType.text(1)
+        info.frequence = self.clockFrequcy.text(1)
+        info.core = self.chipCore.text(1)
+        info.partName = self.chipName.text(1)
+        info.flashSize = self.flashSize.text(1)[:len(self.flashSize.text(1)) - 5]
+        info.codeFile = self.codeFile.text(1)
         info.data0 = self.data0Text.text()
         info.data1 = self.data1Text.text()
         info.watchDog = self.watchDogCB.currentText()
         info.standbyMode = self.ck1.isChecked()
-        info.stopMode = self.ck2.isCheckable()
+        info.stopMode = self.ck2.isChecked()
         info.sectors = self.getSectorsChoice()
         return info
 
-    #新建项目在tree显示信息
-    def showConfiguration(self, info: ProjectInfo):
+    # 在tree显示信息或清空tree， state表示是否删除原扇区，默认删除（False）
+    def showConfiguration(self, info: ProjectInfo, state = False):
         self.projectName.setText(1, info.projectName)
         self.projectDesp.setText(1, info.projectDesp)
         self.chipName.setText(1, info.partName)
@@ -206,8 +213,6 @@ class ProjectTree(QTreeWidget):
         self.clockFrequcy.setText(1, info.frequence)
         self.chipCore.setText(1, info.core)
 
-        # self.codeFile.setToolTip(1, info.codeFile)
-
         self.dataCK.setText(1, self.dataCheckSum(info.codeFile))
         self.fileCRC.setText(1, self.fileCalCRC(info.codeFile))
 
@@ -215,6 +220,10 @@ class ProjectTree(QTreeWidget):
         self.data1Text.setText(info.data1)
         self.ck1.setChecked(info.standbyMode)
         self.ck2.setChecked(info.stopMode)
+
+        # 可悬浮显示内容
+        self.chipName.setToolTip(1, info.partName)
+        self.codeFile.setToolTip(1, info.codeFile)
         
         if info.hWatchDog:
             self.watchDogCB.setCurrentIndex(0)
@@ -223,55 +232,54 @@ class ProjectTree(QTreeWidget):
         else:
             self.watchDogCB.setCurrentIndex(-1)
 
-        font = QFont()
-        font.setPointSize(7)
-        if info.flashSize == "":
-            self.flashSize.setText(1, "")
+        if state:
+            pass
         else:
-            self.setSectorsChoice("", int(info.flashSize))
+            # 清空sector内容
+            for i in range(self.sectors.childCount()):
+                item = self.sectors.child(0)
+                self.sectors.removeChild(item)
 
-    #展示项目信息
-    def openProject(self):
-        filePath, _ = QFileDialog.getOpenFileName(None, "open project", "C:\\", 'MM Programmer Config File(*.ini)')
-        if os.path.exists(filePath):
-            settings = QSettings(filePath, QSettings.IniFormat)
-            size = int(settings.value("Base/flashSize"))
-            codeFile = str(settings.value("Base/filePath"))
-
-            self.projectName.setText(1, settings.value("Base/projectName"))
-            self.projectDesp.setText(1, settings.value("Base/descript"))
-            self.chipCore.setText(1, settings.value("Base/core"))
-            self.chipName.setText(1, settings.value("Base/partName"))
-            self.flashSize.setText(1, str(settings.value("Base/flashSize")) + "KByte")
-            self.codeFile.setText(1, codeFile)
-            self.dataCK.setText(1, self.dataCheckSum(codeFile))
-            self.fileCRC.setText(1, self.fileCalCRC(codeFile))
-
-            self.programModel.setText(1, settings.value("Programmer/programmer"))
-            self.linkMode.setText(1, settings.value("Programmer/connectType"))
-            self.resetType.setText(1, settings.value("Programmer/resetType"))
-            self.clockFrequcy.setText(1, settings.value("Programmer/frequence"))
-
-            self.data0Text.setText(settings.value("Option/data0"))
-            self.data1Text.setText(settings.value("Option/data1"))
-            self.watchDogCB.setCurrentText(settings.value("Option/watchDog"))
-            ck1 = settings.value("Option/standByReset")
-            ck2 = settings.value("Option/stopReset")
-            if ck1 == "true":
-                self.ck1.setChecked(True)
+            if info.flashSize == "": # 关闭项目时，清空内容
+                self.flashSize.setText(1, "")
             else:
-                self.ck1.setChecked(False)
-            if ck2 == "true":
-                self.ck2.setChecked(True)
-            else:
-                self.ck2.setChecked(False)
+                if info.sectors != "":
+                    self.setSectorsChoice(int(info.flashSize), info.sectors)
+                else:
+                    self.setSectorsChoice(int(info.flashSize))
 
-            self.setSectorsChoice(settings.value("Sectors/Sector"), size)
+    # 读取ini的信息，并展示到treewidget
+    def openProject(self, filePath: str) -> ProjectInfo:
+        info = ProjectInfo()
+        self.closeAll() # 装载项目前清空tree，或提示是否需要保存内容
+        settings = QSettings(filePath, QSettings.IniFormat)
+        info.projectName = settings.value("Base/projectName")
+        info.projectDesp = settings.value("Base/descript")
+        info.partName = settings.value("Base/partName")
+        info.core = settings.value("Base/core")
+        info.flashSize = settings.value("Base/flashSize")
+        info.codeFile = settings.value("Base/filePath")
 
-            return filePath, codeFile, size
-        else:
-            return "", "", 0
+        info.programmer = settings.value("Programmer/programmer")
+        info.linkMode = settings.value("Programmer/connectType")
+        info.resetType = settings.value("Programmer/resetType")
+        info.frequence = settings.value("Programmer/frequence")
+
+        info.data0 = settings.value("Option/data0")
+        info.data1 = settings.value("Option/data1")
+        info.watchDog = settings.value("Option/watchDog")
+        info.hWatchDog = True if info.watchDog == "Hardware watchdog" else False
+        info.sWatchDog = True if info.watchDog == "Software watchdog" else False
+        info.standbyMode = True if settings.value("Option/standByReset") == "true" else False
+        info.stopMode = True if settings.value("Option/stopReset") == "true" else False
+
+        info.sectors = settings.value("Sectors/Sector")
+
+        self.showConfiguration(info)
+
+        return info
     
+    # 获取tree的扇区勾选情况
     def getSectorsChoice(self):
         cnt = self.sectors.childCount()
         sectors = ""
@@ -280,7 +288,8 @@ class ProjectTree(QTreeWidget):
             sectors += "1" if ck.isChecked() else "0"
         return sectors
     
-    def setSectorsChoice(self, sectors, size):
+    # 向tree写入扇区的勾选情况
+    def setSectorsChoice(self, size, sectors = ""):
         font = QFont()
         font.setPointSize(8)
         cnt = 0
@@ -301,6 +310,7 @@ class ProjectTree(QTreeWidget):
             self.setItemWidget(sector, 1, ck)
             cnt += 1
     
+    # code file data checksum
     def dataCheckSum(self, filePath: str) -> str:
         if filePath == "":
             return ""
@@ -322,6 +332,7 @@ class ProjectTree(QTreeWidget):
 
         return "0x{:08X}".format(checksum & 0xFFFFFFFF)
 
+    # code file crc
     def fileCalCRC(self, filePath: str) -> str:
         if filePath == "":
             return ""
