@@ -609,8 +609,9 @@ class DAPAccessCMSISDAP(DAPAccessIntf):
         return (pins & Pin.nRESET) == 0
 
     def set_clock(self, frequency):
-        self.flush()
-        self._protocol.set_swj_clock(frequency)
+        # ??? chendo: error
+        # self.flush()
+        # self._protocol.set_swj_clock(frequency)
         self._frequency = frequency
 
     def get_swj_mode(self):

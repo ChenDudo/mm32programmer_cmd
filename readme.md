@@ -117,13 +117,14 @@ json file
 ```json	
 {
 	"command": "connectDevice",
-	"index": 1
+	"index": 0,
+    "speed": 5000000
 }
 ```
 
 json command
 ```cmd
-"{'command': 'connectDevice', 'index': 0}"
+"{'command': 'connectDevice', 'index': 0, 'speed': 5000000}"
 ```
 
 > index为deviceList返回的下标索引值,后期可以扩展编程器配置
@@ -184,6 +185,7 @@ json file
 {
 	"command": "writeMemory",
 	"index": 0,
+    "speed": 5000000,
 	"mcu": "MM32F0010",
 	"address": 0,
     "data": [1, 2]
@@ -192,7 +194,7 @@ json file
 
 json command
 ```cmd
-"{'command': 'writeMemory','index': 0,'mcu': 'MM32F0010','address': 0,'data': [1, 2]}"
+"{'command': 'writeMemory','index': 0,'speed': 5000000',mcu': 'MM32F0010','address': 0,'data': [1, 2]}"
 ```
 
 >address:欲写入数据地址<br />

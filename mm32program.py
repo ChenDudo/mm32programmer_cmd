@@ -92,7 +92,7 @@ class LinkerObject(returnJson):
         self.rdbuff = []
         self.oprateAddr = 0
         self.oprateSize = 0
-        
+        self.speed = 1000000
 
     def setTarget(self, targetname):
         self.target = targetname
@@ -134,6 +134,7 @@ class LinkerObject(returnJson):
             # Start Connect
             self._getLinker()
             self.daplink = self.daplinks[self.selectIdx]
+            self.daplink.set_clock(self.speed)
             self.daplink.open()
             # Get DP
             iDP = dap.DebugPort(self.daplink, None)
@@ -345,7 +346,7 @@ class LinkerObject(returnJson):
             except Exception as e:
                 self.appendMes("[error] Write Failed")
                 self.setCode(1)
-            # self.xlk.reset()
+        self.xlk.reset()
             # self.xlk.close()
         print(self.owndict)
 
@@ -374,7 +375,7 @@ class LinkerObject(returnJson):
                 except Exception as e:
                     self.appendMes("[error] Device connect Failed")
                     self.setCode(1)
-                waddr = addr
+                waddr = addr & 0xFFFFFFFC
                 for wdat in dat:
                     self.xlk.write_U32(waddr, wdat & 0xFFFFFFFF)
                     waddr = waddr + 4
@@ -389,7 +390,7 @@ class LinkerObject(returnJson):
 
     ############################################################################
     def _readU32Dat(self, addr, count = 1):
-        readadr = addr
+        readadr = addr & 0xFFFFFFFC
         readdat = []
         while count >= 1:
             dat = self.xlk.read_U32(readadr)
@@ -492,14 +493,11 @@ class LinkerObject(returnJson):
         self.setCode(0)
         if not self._connectDAP():
             try:
-                # self.optionByteEarse(0x1FFFF800)
                 readAddr = addr & 0xFFFFFFFC
                 self._readU32Dat(readAddr, 10)
                 self._unlockFlash()
-                self._unlockOPT()
-                self._en_OPTPG()
+
                 waddr = addr
-                
                 for wdat in dat:
                     wdat = wdat & 0xFFFF
                     self._unlockOPT()
@@ -509,53 +507,11 @@ class LinkerObject(returnJson):
                     self._waitFlashSR()
                     waddr = waddr + 2
 
-                # # 0x1FFFF800 = 0x5AA5
-                # self.xlk.write_U16(0x1FFFF800, 0xFFA5)
-                # self._waitFlashSR()
-                # read = self.xlk.read_U32(0x1ffff800)
-                # print(hex(read))
-                # # 0x1FFFF804 = 0x5AA5
-                # # self._unlockOPT()
-                # # self._en_OPTPG()
-                # self.xlk.write_U16(0x1FFFF804, 0xFF01)
-                # self._waitFlashSR()
-                # read = self.xlk.read_U32(0x1ffff804)
-                # print(hex(read))
-                # # 0x1FFFF800 = 0x7F805AA5
-                # # self.xlk.write_U32(0x1FFFF800, 0x7F805AA5)
-                # # 0x1FFFF802 = 0x7F80
-                # self._unlockOPT()
-                # self._en_OPTPG()
-                # self.xlk.write_U16(0x1FFFF802, 0xFFFE00FE)
-                # self._waitFlashSR()
-                # read = self.xlk.read_U32(0x1ffff800)
-                # print(hex(read))
-                # # 0x1FFFF804 = 0x7F805AA5
-                # # self.xlk.write_U32(0x1FFFF804, 0x7F805AA5)
-                # # 0x1FFFF806 = 0x7F80
-                # self._unlockOPT()
-                # self._en_OPTPG()
-                # self.xlk.write_U16(0x1FFFF806, 0xFFFE)
-                # self._waitFlashSR()
-                # read = self.xlk.read_U32(0x1ffff804)
-                # print(hex(read))
-                
-                
-                # sleep(0.5)
-
-                # check
-                # readdat = self.xlk.read_U32(addr)
-                # if (readdat & 0xFFFF) != dat:
-                #     self.setCode(2)
-                #     self.appendMes("[error] Read Back failed, read="+str(hex(readdat)))
-                # else:
-                # self.appendMes("[info] OPT Program Success.")
-
                 self._dis_OPTPG()
                 self._lockFLash()
 
-                self.owndict['data'] = self.xlk.read_mem_U32(0x1ffff800, 10)
-                self._readU32Dat(readAddr, 10)
+                self.owndict['data'] = self.xlk.read_mem_U32(readAddr, 10)
+                # self._readU32Dat(readAddr, 10)
                 if self.getCode() == 0:
                     self.appendMes("[info] OPT Program Success.")
                 else:
@@ -636,6 +592,12 @@ def jsonhandle(jsonText):
     linker = LinkerObject()
     
     cmd = jsonText['command']
+    # get speed
+    if ("speed" in jsonText):
+        if (jsonText['speed'] > 1000):
+            linker.speed = jsonText['speed']
+    else:
+        linker.speed = 1000000
     if (cmd == 'devicelist'):
         linker.outputGetLinker()
     elif (cmd == 'connectDevice'):
