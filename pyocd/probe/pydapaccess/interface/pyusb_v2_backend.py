@@ -268,7 +268,7 @@ def _match_cmsis_dap_v2_interface(interface):
         interface_name = usb.util.get_string(interface.device, interface.iInterface)
         
         # This tells us whether the interface is CMSIS-DAP, but not whether it's v1 or v2.
-        if (interface_name is None) or ("CMSIS-DAP" not in interface_name):
+        if (interface_name is None) or ("MM32_V2 CMSIS-DAP" not in interface_name):
             return False
 
         # Now check the interface class to distinguish v1 from v2.
@@ -324,7 +324,7 @@ class HasCmsisDapv2Interface(object):
         try:
             def match_cmsis_dap_interface_name(desc):
                 interface_name = usb.util.get_string(desc.device, desc.iInterface)
-                return (interface_name is not None) and ("CMSIS-DAP" in interface_name)
+                return (interface_name is not None) and ("MM32_V2 CMSIS-DAP" in interface_name)
 
             config = dev.get_active_configuration()
             cmsis_dap_interface = usb.util.find_descriptor(config, custom_match=match_cmsis_dap_interface_name)
