@@ -28,11 +28,20 @@ FLASH_OPTKEYR_addr  =  (0x40022000 + 0x08)
 FLASH_SR_addr       =  (0x40022000 + 0x0C)
 FLASH_CR_addr       =  (0x40022000 + 0x10)
 FLASH_AR_addr       =  (0x40022000 + 0x14)
+
 FLASH_CR_OPTWRE     =  (1 << 9)
 FLASH_CR_LOCK       =  (1 << 7)
 FLASH_CR_STRT       =  (1 << 6)
 FLASH_CR_OPTER      =  (1 << 5)
 FLASH_CR_OPTPG      =  (1 << 4)
+FLASH_CR_MER        =  (1 << 2)
+FLASH_CR_PER        =  (1 << 1)
+FLASH_CR_PG         =  (1 << 0)
+
+FLASH_SR_BSY        =  (1 << 0)
+FLASH_SR_PGERR      =  (1 << 2)
+FLASH_SR_WRPRTERR   =  (1 << 4)
+FLASH_SR_EOP        =  (1 << 5)
 
 def get_path():
     return os.getcwd()      #.replace('\\','/')
@@ -269,8 +278,8 @@ class LinkerObject(returnJson):
             except Exception as e:
                 self.appendMes("[info] Earse Failed.")
                 self.setCode(1)
-                self.xlk.reset()
-                self.xlk.close()
+                # self.xlk.reset()
+                # self.xlk.close()
         else:
             self.appendMes("[error] Linker connect Failed.")
             self.setCode(1)
@@ -292,8 +301,8 @@ class LinkerObject(returnJson):
             except Exception as e:
                 self.appendMes("[info] Earse Failed.")
                 self.setCode(0)
-            self.xlk.reset()
-            self.xlk.close()
+            # self.xlk.reset()
+            # self.xlk.close()
         else:
             self.appendMes("[error] Linker connect Failed.")
             self.setCode(1)
@@ -317,8 +326,8 @@ class LinkerObject(returnJson):
             except Exception as e:
                 self.appendMes("[error] Read Failed.")
                 self.setCode(1)
-            self.xlk.reset()
-            self.xlk.close()
+            # self.xlk.reset()
+            # self.xlk.close()
         print(self.owndict)
 
     ############################################################################
@@ -336,8 +345,8 @@ class LinkerObject(returnJson):
             except Exception as e:
                 self.appendMes("[error] Write Failed")
                 self.setCode(1)
-            self.xlk.reset()
-            self.xlk.close()
+            # self.xlk.reset()
+            # self.xlk.close()
         print(self.owndict)
 
     ############################################################################
@@ -396,14 +405,21 @@ class LinkerObject(returnJson):
 
     def _waitFlashSR(self):
         retrytimes = 5
-        while retrytimes:
+        read_Flash_SR = self.xlk.read_U32(FLASH_SR_addr)
+        while retrytimes and (read_Flash_SR & 0x01):
             read_Flash_SR = self.xlk.read_U32(FLASH_SR_addr)
-            if not (read_Flash_SR & 0x01): return
             sleep(0.1)
             retrytimes = retrytimes - 1
-            if retrytimes == 0:
-                self.setCode(1)
-                self.appendMes("[warning] Wait Timeout, now FLash.SR = 0x%08x." % read_Flash_SR)
+        if retrytimes == 0:
+            self.setCode(1)
+            self.appendMes("[warning] Wait Timeout, now FLash.SR = 0x%08x." % read_Flash_SR)
+        read_Flash_CR = self.xlk.read_U32(FLASH_CR_addr)
+        self.xlk.write_U32(FLASH_CR_addr, read_Flash_CR & (~(FLASH_CR_STRT | FLASH_CR_OPTER | FLASH_CR_OPTPG | FLASH_CR_MER | FLASH_CR_PER | FLASH_CR_PG)))
+        self.xlk.write_U32(FLASH_SR_addr, FLASH_SR_EOP | FLASH_SR_WRPRTERR | FLASH_SR_PGERR)
+        # read_Flash_CR = self.xlk.read_U32(FLASH_CR_addr)
+        # read_Flash_SR = self.xlk.read_U32(FLASH_SR_addr)
+        # print("FLASH_CR = "+hex(read_Flash_CR))
+        # print("FLASH_SR = "+hex(read_Flash_SR))
 
     def _optEarse(self, addr):
         self.xlk.write_U32(FLASH_AR_addr, addr)
@@ -428,19 +444,27 @@ class LinkerObject(returnJson):
     
     def _lockFLash(self):
         self.xlk.write_U32(FLASH_CR_addr, FLASH_CR_LOCK)
+        read_Flash_CR = self.xlk.read_U32(FLASH_CR_addr)
+        self.appendMes("[info] Flash Lock, Flash.CR = " +hex(read_Flash_CR)+'.')
 
     def _en_OPTPG(self):
         read_Flash_CR = self.xlk.read_U32(FLASH_CR_addr)
         self.xlk.write_U32(FLASH_CR_addr, FLASH_CR_OPTPG | read_Flash_CR)
+        read_Flash_CR = self.xlk.read_U32(FLASH_CR_addr)
+        self.appendMes("[info] OPT.PG Enable, Flash.CR = " +hex(read_Flash_CR)+'.')
 
     def _dis_OPTPG(self):
         read_Flash_CR = self.xlk.read_U32(FLASH_CR_addr)
         # self.xlk.write_U32(FLASH_CR_addr, ~FLASH_CR_OPTPG | read_Flash_CR)
         self.xlk.write_U32(FLASH_CR_addr, 0xFFFFFFEF & read_Flash_CR)
+        read_Flash_CR = self.xlk.read_U32(FLASH_CR_addr)
+        self.appendMes("[info] OPT.PG Disable, Flash.CR = " +hex(read_Flash_CR)+'.')
 
     def _en_OPTER(self):
         read_Flash_CR = self.xlk.read_U32(FLASH_CR_addr)
         self.xlk.write_U16(FLASH_CR_addr, FLASH_CR_OPTER | FLASH_CR_STRT | read_Flash_CR)
+        read_Flash_CR = self.xlk.read_U32(FLASH_CR_addr)
+        self.appendMes("[info] OPT.ER Enable, Flash.CR = " +hex(read_Flash_CR)+'.')
 
 
     ############################################################################
@@ -458,8 +482,8 @@ class LinkerObject(returnJson):
             except Exception as e:
                 self.appendMes("[error] OPT Earse Failed.")
                 self.setCode(1)
-        self.xlk.reset()
-        self.xlk.close()
+        # self.xlk.reset()
+        # self.xlk.close()
         print(self.owndict)
 
 
@@ -468,7 +492,9 @@ class LinkerObject(returnJson):
         self.setCode(0)
         if not self._connectDAP():
             try:
-                self._readU32Dat(0x1ffff800, 10)
+                # self.optionByteEarse(0x1FFFF800)
+                readAddr = addr & 0xFFFFFFFC
+                self._readU32Dat(readAddr, 10)
                 self._unlockFlash()
                 self._unlockOPT()
                 self._en_OPTPG()
@@ -476,13 +502,45 @@ class LinkerObject(returnJson):
                 
                 for wdat in dat:
                     wdat = wdat & 0xFFFF
+                    self._unlockOPT()
+                    self._en_OPTPG()
                     self.appendMes('[info]: write '+hex(waddr)+"="+hex(wdat)+'.')
-                    # if self.xlk.read_U32(waddr) & 0xFFFF != 0xFFFF:
-                    #     self._optEarse(waddr)
                     self.xlk.write_U16(waddr, wdat)
-                    # self._waitFlashSR()
+                    self._waitFlashSR()
                     waddr = waddr + 2
 
+                # # 0x1FFFF800 = 0x5AA5
+                # self.xlk.write_U16(0x1FFFF800, 0xFFA5)
+                # self._waitFlashSR()
+                # read = self.xlk.read_U32(0x1ffff800)
+                # print(hex(read))
+                # # 0x1FFFF804 = 0x5AA5
+                # # self._unlockOPT()
+                # # self._en_OPTPG()
+                # self.xlk.write_U16(0x1FFFF804, 0xFF01)
+                # self._waitFlashSR()
+                # read = self.xlk.read_U32(0x1ffff804)
+                # print(hex(read))
+                # # 0x1FFFF800 = 0x7F805AA5
+                # # self.xlk.write_U32(0x1FFFF800, 0x7F805AA5)
+                # # 0x1FFFF802 = 0x7F80
+                # self._unlockOPT()
+                # self._en_OPTPG()
+                # self.xlk.write_U16(0x1FFFF802, 0xFFFE00FE)
+                # self._waitFlashSR()
+                # read = self.xlk.read_U32(0x1ffff800)
+                # print(hex(read))
+                # # 0x1FFFF804 = 0x7F805AA5
+                # # self.xlk.write_U32(0x1FFFF804, 0x7F805AA5)
+                # # 0x1FFFF806 = 0x7F80
+                # self._unlockOPT()
+                # self._en_OPTPG()
+                # self.xlk.write_U16(0x1FFFF806, 0xFFFE)
+                # self._waitFlashSR()
+                # read = self.xlk.read_U32(0x1ffff804)
+                # print(hex(read))
+                
+                
                 # sleep(0.5)
 
                 # check
@@ -497,7 +555,7 @@ class LinkerObject(returnJson):
                 self._lockFLash()
 
                 self.owndict['data'] = self.xlk.read_mem_U32(0x1ffff800, 10)
-                self._readU32Dat(0x1FFFF800, 10)
+                self._readU32Dat(readAddr, 10)
                 if self.getCode() == 0:
                     self.appendMes("[info] OPT Program Success.")
                 else:
@@ -580,50 +638,52 @@ def jsonhandle(jsonText):
     cmd = jsonText['command']
     if (cmd == 'devicelist'):
         linker.outputGetLinker()
-    if (cmd == 'connectDevice'):
+    elif (cmd == 'connectDevice'):
         idx = (jsonText["index"])
         linker.selectLinker(idx)
-    if (cmd == 'readMemory'):
+    elif (cmd == 'readMemory'):
         linker.setSelectIdx(jsonText['index'])
         linker.setTarget(jsonText['mcu'])
         linker.oprateAddr = jsonText['address']
         linker.oprateSize = jsonText['length']
         linker.readChip()
-    if (cmd == 'writeMemory'):
+    elif (cmd == 'writeMemory'):
         linker.setSelectIdx(jsonText['index'])
         linker.setTarget(jsonText['mcu'])
         linker.oprateAddr = jsonText['address']
         linker.wrbuff = jsonText['data']
         linker.writeChip()
-    if (cmd == 'earseChip'):
+    elif (cmd == 'earseChip'):
         linker.setSelectIdx(jsonText['index'])
         linker.setTarget(jsonText['mcu'])
         linker.earseChip()
-    if (cmd == 'earseSector'):
+    elif (cmd == 'earseSector'):
         linker.setSelectIdx(jsonText['index'])
         linker.setTarget(jsonText['mcu'])
         linker.oprateAddr = jsonText['address']
         linker.oprateSize = jsonText['length']
         linker.earseSector()
-    if (cmd == 'readMem32'):
+    elif (cmd == 'readMem32'):
         linker.setSelectIdx(jsonText['index'])
         addr = jsonText['address']
         cnt = jsonText['length']
         linker.readMem32(addr, cnt)
-    if (cmd == 'writeMem32'):
+    elif (cmd == 'writeMem32'):
         linker.setSelectIdx(jsonText['index'])
         addr = jsonText['address']
         dat = jsonText['data']
         linker.writeMem32(addr, dat)
-    if (cmd == 'optWrite'):
+    elif (cmd == 'optWrite'):
         linker.setSelectIdx(jsonText['index'])
         addr = jsonText['address']
         dat = jsonText['data']
         linker.optionByteProgram(addr, dat)
-    if (cmd == 'optEarse'):
+    elif (cmd == 'optEarse'):
         linker.setSelectIdx(jsonText['index'])
         addr = jsonText['address']
         linker.optionByteEarse(addr)
+    # self.xlk.reset()
+    # self.xlk.close()
 
 
 if __name__ == "__main__":

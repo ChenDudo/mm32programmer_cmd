@@ -247,7 +247,7 @@ class MEM_AP(AccessPort, memory_interface.MemoryInterface):
         if transfer_size == 8:
             data = data << ((addr & 0x03) << 3)
         elif transfer_size == 16:
-            data = data << ((addr & 0x02) << 3)
+            data = data     #<< ((addr & 0x02) << 3)
 
         try:
             self.write_reg(MEM_AP_TAR, addr)

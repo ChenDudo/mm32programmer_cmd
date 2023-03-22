@@ -160,7 +160,7 @@ json file
 }
 ```
     
->address:欲读取数据地址</br>
+>address:欲读取数据地址<br />
 length:欲读取数据长度(全部为10进制)
 
 json command
@@ -195,8 +195,8 @@ json command
 "{'command': 'writeMemory','index': 0,'mcu': 'MM32F0010','address': 0,'data': [1, 2]}"
 ```
 
->address:欲写入数据地址</br>
-length:欲写入取数据长度(全部为10进制)</br>
+>address:欲写入数据地址<br />
+length:欲写入取数据长度(全部为10进制)<br />
 data: 欲写入数据
 
 
@@ -262,7 +262,7 @@ cmd:
 ```cmd
 "{'command': 'readMem32', 'index': 0, 'address': 536868864, 'length': 8}"
 ```
-address: 要写入的地址</br>
+address: 要写入的地址<br />
 length: 读取长度 /（32bit）个数
 
 ### 7 writeMem32 写内存 U32
@@ -289,17 +289,17 @@ cmd:
 
 ### OptionByte 编程
 对应地址写入值
-1. 读 FLASH_CR.LOCK 位 </br>
-2. 判断 FLASH_CR.LOCK = 1 ？</br>
-3. yes:</br>
-   执行解锁序列：</br>
-   FLASH->KEYR = 0x45670123;</br>
-   FLASH->KEYR = 0xCDEF89AB;</br>
+1. 读 FLASH_CR.LOCK 位 <br />
+2. 判断 FLASH_CR.LOCK = 1 ？<br />
+3. yes:<br />
+   执行解锁序列：<br />
+   FLASH->KEYR = 0x45670123;<br />
+   FLASH->KEYR = 0xCDEF89AB;<br />
 4. 判断 FLASH_CR.OPTWRE = 0 ?
-5. yes:<br>
-   执行解锁序列：</br>
-   FLASH->OPTKEYR = 0x45670123;</br>
-   FLASH->OPTKEYR = 0xCDEF89AB;</br>
+5. yes:<br />
+   执行解锁序列：<br />
+   FLASH->OPTKEYR = 0x45670123;<br />
+   FLASH->OPTKEYR = 0xCDEF89AB;<br />
 6. 写 FLASH_CR.OPTPG = 1
 7. 写 所需地址 半字操作
    1. FLASH_AR = 写入的地址
@@ -310,16 +310,16 @@ cmd:
 
 ### OptionByte 擦除
 对应地址擦除
-1. 读 FLASH_CR.LOCK 位 ，判断 = 1 ？</br>
-3. yes:</br>
-   执行解锁序列：</br>
-   写 FLASH->KEYR = 0x45670123;</br>
-   写 FLASH->KEYR = 0xCDEF89AB;</br>
+1. 读 FLASH_CR.LOCK 位 ，判断 = 1 ？<br />
+3. yes:<br />
+   执行解锁序列：<br />
+   写 FLASH->KEYR = 0x45670123;<br />
+   写 FLASH->KEYR = 0xCDEF89AB;<br />
 4. 读 FLASH_CR.OPTWRE，判断 = 0 ?
-5. yes:<br>
-   执行解锁序列：</br>
-   写 FLASH->OPTKEYR = 0x45670123;</br>
-   写 FLASH->OPTKEYR = 0xCDEF89AB;</br>
+5. yes:<br />
+   执行解锁序列：<br />
+   写 FLASH->OPTKEYR = 0x45670123;<br />
+   写 FLASH->OPTKEYR = 0xCDEF89AB;<br />
 6. 写 FLASH_AR = 写入的地址
 7. 写 FLASH_CR.OPTER = 1
 8. 写 FLASH_CR.STRT  = 1
@@ -347,22 +347,22 @@ cmd:
 
 使能写保护
 - 通过设置选项字节区块中的 WRP0 中的 WRP 位为 0，设置写保护
-- 系统复位后将加载新选项字节，使能写保护</br>
+- 系统复位后将加载新选项字节，使能写保护<br />
 如果试图写入或擦除一个受写保护的页，会引起 FLASH_SR 中的 WRPRTERR 标志位置位。
 
 | address | [15:8] | [7:0] | default |
 |:-------:|:------:|:-----:|:-------:|
 | 0x1FFF_F808 | nWRP0 | WRP0 | 0xFFFF |
 
-解除写保护</br>
+解除写保护<br />
 情形 1：解除写保护，同时解除读保护
 - 使用闪存控制寄存器（FLASH_CR）的 OPTER 位擦除整个选项字节区块: 写 0x5AA5 半字到对应地址 0x1FFFF800；
 - 对 0x08000000 的主 Flash 全片擦除；
-- 系统复位，重装载选项字节（包含新的 WRP 字节），写保护被解除</br>
+- 系统复位，重装载选项字节（包含新的 WRP 字节），写保护被解除<br />
 使用这种方法，将解除全片主闪存模块的写保护同时擦除全片主闪存块。
 
 情形 2：解除写保护，同时保持读保护有效，这种情况常见于用户自己实现在程序中编程的启动
 程序中：
 - 使用闪存控制寄存器（FLASH_CR）的 OPTER 位擦除整个选项字节区块
-- 系统复位，重装载选项字节（包含新的 WRP 字节），写保护被解除</br>
+- 系统复位，重装载选项字节（包含新的 WRP 字节），写保护被解除<br />
 使用这种方法，将解除整个主闪存模块的写保护，同时保持读保护有效。
