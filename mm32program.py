@@ -159,6 +159,27 @@ class LinkerObject(returnJson):
             return 1
         return 0
 
+    def _quit_Reset(self, reset):
+        try:
+            # Start Connect
+            self._getLinker()
+            self.daplink = self.daplinks[self.selectIdx]
+            self.daplink.open()
+            # Get DP
+            iDP = dap.DebugPort(self.daplink, None)
+            iDP.init()
+            # Get AP
+            iAP = ap.AHB_AP(iDP, 0)
+            iAP.init()
+            self.xlk = xlink.XLink(cortex_m.CortexM(None, iAP))
+            if reset:
+                self.xlk.reset()
+            self.xlk.close()
+        except Exception as e:
+            self.daplink.close()
+            return 1
+        return 0
+
     def _getChipUUID(self):
         if not self._connectDAP():
             print("[info] MCU_ID = 0x%08X" % self.MCUID)
@@ -346,8 +367,8 @@ class LinkerObject(returnJson):
             except Exception as e:
                 self.appendMes("[error] Write Failed")
                 self.setCode(1)
-        self.xlk.reset()
-            # self.xlk.close()
+        # self.xlk.reset()
+        # self.xlk.close()
         print(self.owndict)
 
     ############################################################################
@@ -520,8 +541,18 @@ class LinkerObject(returnJson):
                 self.appendMes("[error] OPT Program Failed.")
                 self.setCode(1)
         self.xlk.reset()
-        self.xlk.close()
+        # self.xlk.close()
         print(self.owndict)
+
+    def reEarseF0010(self):
+        self._getLinker()
+        self.daplink = self.daplinks[self.selectIdx]
+        self.daplink.set_clock(self.speed)
+        self.daplink.open()
+        self.daplink._link._protocol.set_swj_pins(0, 0, 19945)
+        sleep(1)
+        self.earseChip()
+
         
 '''
 # def parse_args():
@@ -644,6 +675,21 @@ def jsonhandle(jsonText):
         linker.setSelectIdx(jsonText['index'])
         addr = jsonText['address']
         linker.optionByteEarse(addr)
+    elif (cmd == 'reEarseF0010'):
+        linker.setSelectIdx(jsonText['index'])
+        linker.reEarseF0010()
+    elif (cmd == 'quit_reset'):
+        linker.setSelectIdx(jsonText['index'])
+        if ("reset" in jsonText):
+            if (jsonText['reset'] == 0):
+                reset = 0
+            else:
+                reset = 1
+        else:
+            reset = 1
+        linker._quit_Reset(reset)
+    return linker.owndict
+
     # self.xlk.reset()
     # self.xlk.close()
 

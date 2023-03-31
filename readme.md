@@ -1,36 +1,243 @@
-# MM32Programmer CMD
+# MM32Programmer Driver
 
 ## Brief
 
-this is just for MM32-LINK MINI Programmer.
+For MM32-LINK Programmer Server.
 
-## support 
-- MM32F0010
-- MM32F0020
-- MM32F0040
-- MM32F0130 *
-- MM32F0140 *
-- MM32F0160 *
-- MM32G0140 *
-- MM32A0140 *
-- MM32F003 *
-- MM32L07x *
-- MM32F03x *
-- MM32L0130 *
-- MM32L0160 *
-- MM32SPIN05 *
-- MM32SPIN06 *
-- MM32SPIN07 *
-- MM32SPIN08 *
-- MM32SPIN0280 *
-- MM32F103C8 *
-- MM32F103CB *
-- MM32L3xx *
-- MM32F3270 *
-- MM32F5270 *
-- MM32F5280 *
+## 服务器运行
+```powershell
+cmdserver.exe -R 1234
+
+cmdserver.exe -run 1234
+```
+
+## 客户端测试
+```powershell
+python cmsclient.py
+```
+
+## API 接口说明
   
-> \*: Test
+### 1. 扫描 LINK 设备
+   
+client cmd:
+```json		
+{"command": "devicelist"}
+```
+old cmd:
+```cmd
+-j "{'command': 'devicelist'}"
+```
+
+return:
+```json	
+{
+    "code": 0, 
+    "message": "[info] Get device list success", 
+    "data": [
+        {
+            "uid": "0880ff20f17004c75fd",
+            "product": "MM32_V1 CMSIS-DAP",
+            "vendor": "MindMotion"
+        }, 
+        {
+            "uid": "0880ff20f17004c75fd", 
+            "product": "MM32_V1 CMSIS-DAP", 
+            "vendor": "MindMotion"
+        }
+    ]
+}
+```
+
+### 2. 连接目标板
+
+client cmd:
+```json	
+{"command": "connectDevice", "index": 0, "speed": 5000000}
+```
+
+old cmd:
+```cmd
+-j "{'command': 'connectDevice', 'index': 0, 'speed': 5000000}"
+```
+
+- index 为 deviceList 索引值,后期可以扩展编程器配置
+- speed: 小于 1,000 或没配置时，默认Speed 为 1,000,000
+
+
+Return
+```json	
+{
+    "code": 0, 
+    "message": "[info] You select idx=0, device UID:0880ff20f17004c75fd.[info] Target connnect Pass.", 
+    "data": [
+        {
+            "MCU_ID": 196154487, 
+            "CPU_INFO": "Cortex-M0 r0p0", 
+            "DEV_ID": 2353221841,
+            "UID1": 1296904704, 
+            "UID2": 4294967112, 
+            "UID3": 4294966911
+        }
+    ]
+}
+```
+
+### 3. 读取 Memory
+
+client cmd:
+```json	
+{"command": "readMemory","index": 0,"mcu": "MM32F0010","address": 0,"length": 10}
+```
+    
+- address:欲读取数据地址<br />
+- length:欲读取数据长度(全部为10进制)
+
+old cmd:
+```cmd
+-j "{'command': 'readMemory', 'index': 0, 'mcu': 'MM32F0010', 'address': 0, 'length': 10}"
+```
+
+Return
+```json	
+{
+    "code": 0, 
+    "message": "[info] Read Success", 
+    "data": [255, 255, 255, 255, 255, 255, 255, 255, 255, 255]
+}
+```
+
+
+### 4. 写入 Memory
+
+client cmd:
+```json
+{"command": "writeMemory","index": 0,"speed": 5000000,"mcu": "MM32F0010","address": 0,"data": [1, 2]}
+```
+
+old cmd:
+```cmd
+"{'command': 'writeMemory','index': 0,'speed': 5000000',mcu': 'MM32F0010','address': 0,'data': [1, 2]}"
+```
+- address:欲写入数据地址<br />
+- length:欲写入取数据长度(全部为10进制)<br />
+- data: 欲写入数据
+
+Return
+```json
+{
+    "code": 0, 
+    "message": "[info] Read Success", 
+    "data": [255, 255, 255, 255, 255, 255, 255, 255, 255, 255]
+}
+```
+
+### 5.1 全片擦除
+client cmd:
+```json
+{"command": "earseChip","index": 0,"mcu": "MM32F0010"}
+```
+old cmd:
+```cmd
+"{'command': 'earseChip','index': 0,'mcu': 'MM32F0010'}"
+```
+Return
+```json
+{
+    "code": 0, 
+    "message": "[info] Earse Success\n", 
+    "data": []
+}
+```
+
+### 5.2 扇区擦除
+client cmd:
+```json
+{"command": "earseSector","index": 0,"mcu": "MM32F0010","address": 0,"length": 32768}
+```
+old cmd:
+```json
+-j "{'command': 'earseSector','index': 0,'mcu': 'MM32F0010','address': 0,'length': 32768}"
+```
+Return:
+```json
+{
+    "code": 0, 
+    "message": "[info] Earse Success\n", 
+    "data": []
+}
+```
+
+
+### 6 读32位内存
+client cmd:
+```json
+{"command": "readMem32", "index": 0, "address": 536868864, "length": 8}
+```
+old cmd:
+```json
+-j "{'command': 'readMem32', 'index': 0, 'address': 536868864, 'length': 8}"
+```
+- address: 要写入的地址<br />
+- length: 读取长度 /（32bit）个数
+
+### 7 写32位内存
+client cmd:
+```json
+{"command": "writeMem32", "index": 0, "address": 1073881092, "data": [1164378403]}
+```
+old cmd:
+```json
+-j "{'command': 'writeMem32', 'index': 0, 'address': 1073881092, 'data': [1164378403]}"
+```
+
+### 8 选项字节擦除
+client cmd:
+```json
+{"command": "optEarse", "index": 0, "address": 536868864}
+```
+old cmd:
+```cmd
+-j "{'command': 'optEarse', 'index': 0, 'address': 536868864}"
+```
+
+### 9 选项字节编程
+client cmd:
+```json
+{"command": "optWrite", "index": 0, "address": 536868864, "data": [23205，65280,2805,255]}
+```
+old cmd:
+```json
+-j "{'command': 'optWrite', 'index': 0, 'address': 536868864, 'data': [23205，65280,2805,255]}"
+```
+
+### 10 特殊 F0010 擦除
+client cmd:
+```json
+{"command": "reEarseF0010", "index": 0}
+```
+old cmd:
+```json
+-j "{'command': 'reEarseF0010', 'index': 0}
+```
+
+### 11 释放LINK
+client cmd:
+```json
+{"command": "quit_reset", "index": 0, "reset": 1}
+```
+old cmd:
+```json
+-j "{'command': 'quit_reset', 'index': 0, 'reset': 1}"
+```
+
+- reset = 1: reset&run and release LINK (default)
+- reset = 0: no reset and release LINK
+
+
+
+
+
 
 
 
@@ -69,221 +276,6 @@ this is just for MM32-LINK MINI Programmer.
 | MM32F3270 | 0x40007080 | 0xCC9AA0E7 |
 | MM32F5270 | 0x40007080 | 0x4D4D0800 |
 
-### 3. MCU UID
-<!-- UID1 = *(0x1FFF_F7E8)
-UID2 = *(0x1FFF_F7EC)
-UID3 = *(0x1FFF_F7F0) -->
-
-
-## MM32Programmer Command List
-
-### 1. deviceList
-
-json file
-```json		
-{
-	"command": "devicelist"
-}
-```
-
-json command
-```cmd
-"{'command': 'devicelist'}"
-```
-
-return
-```json	
-{
-    'code': 0, 
-    'message': '[info] Get device list success', 
-    'data': [
-        {
-            'uid': '0880ff20f17004c75fd',
-            'product': 'MM32_V1 CMSIS-DAP',
-            'vendor': 'MindMotion'
-        }, 
-        {
-            'uid': '0880ff20f17004c75fd', 
-            'product': 'MM32_V1 CMSIS-DAP', 
-            'vendor': 'MindMotion'
-        }
-    ]
-}
-```
-
-### 2.connectDevice
-
-json file
-```json	
-{
-	"command": "connectDevice",
-	"index": 0,
-    "speed": 5000000
-}
-```
-
-json command
-```cmd
-"{'command': 'connectDevice', 'index': 0, 'speed': 5000000}"
-```
-
-> index为deviceList返回的下标索引值,后期可以扩展编程器配置
-
-
-Return
-```json	
-{
-    'code': 0, 
-    'message': '[info] You select idx=0, device UID:0880ff20f17004c75fd\n[info] Target connnect Pass\n', 
-    'data': [
-        {
-            'MCU_ID': 196154487, 
-            'CPU_INFO': 'Cortex-M0 r0p0', 
-            'DEV_ID': 2353221841,
-            'UID1': 1296904704, 
-            'UID2': 4294967112, 
-            'UID3': 4294966911
-        }
-    ]
-}
-```
-
-### 3.readMemory
-
-json file
-```json	
-{
-	"command": "readMemory",
-	"index": 0,
-	"mcu": "MM32F0010",
-    "address": 0, 
-    "length": 10
-}
-```
-    
->address:欲读取数据地址<br />
-length:欲读取数据长度(全部为10进制)
-
-json command
-```cmd
-"{'command': 'readMemory', 'index': 0, 'mcu': 'MM32F0010', 'address': 0, 'length': 10}"
-```
-
-Return
-```json	
-{
-    'code': 0, 
-    'message': '[info] Read Success', 
-    'data': [255, 255, 255, 255, 255, 255, 255, 255, 255, 255]
-}
-```
-
-### 4.writeMemory
-
-json file
-```json
-{
-	"command": "writeMemory",
-	"index": 0,
-    "speed": 5000000,
-	"mcu": "MM32F0010",
-	"address": 0,
-    "data": [1, 2]
-}
-```
-
-json command
-```cmd
-"{'command': 'writeMemory','index': 0,'speed': 5000000',mcu': 'MM32F0010','address': 0,'data': [1, 2]}"
-```
-
->address:欲写入数据地址<br />
-length:欲写入取数据长度(全部为10进制)<br />
-data: 欲写入数据
-
-
-Return
-```json
-{
-    'code': 0, 
-    'message': '[info] Read Success', 
-    'data': [255, 255, 255, 255, 255, 255, 255, 255, 255, 255]
-}
-```
-
-### 5.1 全片擦除 earseChip
-json file
-```json
-{
-	"command": "earseChip",
-	"index": 0,
-	"mcu": "MM32F0010"
-}
-```
-json command
-```cmd
-"{'command': 'earseChip','index': 0,'mcu': 'MM32F0010'}"
-```
-
-### 5.2 扇区擦除 earseSector
-json file
-```json
-{
-	"command": "earseSector",
-	"index": 0,
-	"mcu": "MM32F0010",
-	"address": 0,
-	"length": 32768
-}
-```
-Return
-```json
-{
-    'code': 0, 
-    'message': '[info] Earse Success\n', 
-    'data': []
-}
-```
-
-json command
-```
-"{'command': 'earseSector','index': 0,'mcu': 'MM32F0010','address': 0,'length': 32768}"
-```
-
-Return
-```json
-{
-    'code': 0, 
-    'message': '[info] Earse Success\n', 
-    'data': []
-}
-```
-
-### 6 readMem32 读内存 U32
-cmd:
-```cmd
-"{'command': 'readMem32', 'index': 0, 'address': 536868864, 'length': 8}"
-```
-address: 要写入的地址<br />
-length: 读取长度 /（32bit）个数
-
-### 7 writeMem32 写内存 U32
-cmd:
-```cmd
-"{'command': 'writeMem32', 'index': 0, 'address': 1073881092, 'data': [1164378403]}"
-```
-
-### 8 optEarse 选项字节 擦除
-cmd:
-```cmd
-"{'command': 'optEarse', 'index': 0, 'address': 536868864}"
-```
-
-### 9 optWrite 选项字节 编程
-cmd:
-```cmd
-"{'command': 'optWrite', 'index': 0, 'address': 536868864, 'data': [23205，65280,2805,255]}"
-```
 
 
 ## 其他
@@ -309,7 +301,6 @@ cmd:
 9.  FLASH_CR.OPTPG = 0
 10. 读 目标地址 检查编程值是否匹配
     
-
 ### OptionByte 擦除
 对应地址擦除
 1. 读 FLASH_CR.LOCK 位 ，判断 = 1 ？<br />
