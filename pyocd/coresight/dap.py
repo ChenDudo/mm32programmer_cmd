@@ -153,6 +153,7 @@ class DebugPort(object):
         self.link._link._protocol.set_swj_pins(Pin.nRESET | Pin.SWCLK_TCK | Pin.SWDIO_TMS, Pin.nRESET | Pin.SWCLK_TCK | Pin.SWDIO_TMS, 0)
 
     def set_reset_pin_low(self):
+        self.link._link._protocol.set_swj_pins(0, 0, 19944)
         self.Reset_Pin_Set = 0
         self.link._link._protocol.set_swj_pins(Pin.SWCLK_TCK | Pin.SWDIO_TMS, Pin.nRESET | Pin.SWCLK_TCK | Pin.SWDIO_TMS, 0)
 
