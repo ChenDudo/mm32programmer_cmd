@@ -1,5 +1,5 @@
 # MM32Programmer Driver
-
+[TOC]
 ## Brief
 
 For MM32-LINK Programmer Server.
@@ -17,9 +17,9 @@ python cmsclient.py
 ```
 
 ## API 接口说明
-  
+
 ### 1. 扫描 LINK 设备
-   
+
 client cmd:
 ```json		
 {"command": "devicelist"}
@@ -89,7 +89,7 @@ client cmd:
 ```json	
 {"command": "readMemory","index": 0,"mcu": "MM32F0010","address": 0,"length": 10}
 ```
-    
+
 - address:欲读取数据地址<br />
 - length:欲读取数据长度(全部为10进制)
 
@@ -204,11 +204,11 @@ old cmd:
 ### 9 选项字节编程
 client cmd:
 ```json
-{"command": "optWrite", "index": 0, "address": 536868864, "data": [23205，65280,2805,255]}
+{"command": "optWrite", "index": 0, "address": 536868864, "data": [23205,65280,2805,255]}
 ```
 old cmd:
 ```json
--j "{'command': 'optWrite', 'index': 0, 'address': 536868864, 'data': [23205，65280,2805,255]}"
+-j "{'command': 'optWrite', 'index': 0, 'address': 536868864, 'data': [23205,65280,2805,255]}"
 ```
 
 ### 10 特殊 F0010 擦除

@@ -210,11 +210,6 @@ class LinkerObject(returnJson):
     ############################################################################
     def outputGetLinker(self):
         self._getLinker()
-        linker_dict = {
-            'uid' : '',
-            'product' : '',
-            'vendor' : ''
-        }
         linkerIdx = []
         linkerUniqueID = []
         for i, daplink in enumerate(self.daplinks):
@@ -222,6 +217,11 @@ class LinkerObject(returnJson):
             linkerUniqueID.append(daplink.unique_id+','+daplink.product_name+','+daplink.vendor_name)
         dicUUID  = dict(zip(linkerIdx, linkerUniqueID))
         for i, daplink in enumerate(self.daplinks):
+            linker_dict = {
+            'uid' : '',
+            'product' : '',
+            'vendor' : ''
+            }
             linker_dict['uid'] = daplink.unique_id
             linker_dict['product'] = daplink.product_name
             linker_dict['vendor'] = daplink.vendor_name
