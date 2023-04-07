@@ -11,7 +11,7 @@ from .flash import Flash
 class MM32L0020(object):
     CHIP_CORE = 'Cortex-M0+'
 
-    PAGE_SIZE = 1024 * 1 // 2
+    PAGE_SIZE = 1024 * 1
     SECT_SIZE = 1024 * 1
     CHIP_SIZE = 1024 * 32
 
@@ -29,7 +29,7 @@ class MM32L0020(object):
         self.flash.UnInit(1)
 
     def chip_write(self, addr, data):
-        self.sect_erase(addr, len(data))
+        # self.sect_erase(addr, len(data))
 
         self.flash.Init(0, 0, 2)
         for i in range(0, len(data)//self.PAGE_SIZE):

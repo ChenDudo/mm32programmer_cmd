@@ -6,6 +6,7 @@ from . import MM32F103
 from . import MM32F0010
 from . import MM32F0020
 from . import MM32F0130
+from . import MM32F0160
 from . import MM32F0x40
 from . import MM32F3270
 from . import MM32F5270
@@ -19,7 +20,7 @@ Devices = collections.OrderedDict([
     ('MM32G0140',    MM32F0x40.MM32F0140),
     ('MM32A0140',    MM32F0x40.MM32F0140),
     ('MM32F0140',    MM32F0x40.MM32F0140),
-    ('MM32F0160',    MM32F0x40.MM32F0140),
+    ('MM32F0160',    MM32F0160.MM32F0160),
     ('MM32F0270',    MM32F0x40.MM32F0140),
     ('MM32F003',     MM32F003.MM32F003),
     ('MM32L07x',     MM32F0x40.MM32F0140),

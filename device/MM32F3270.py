@@ -25,7 +25,7 @@ class MM32F3270(object):
         self.flash.UnInit(1)
 
     def chip_write(self, addr, data):
-        self.sect_erase(addr, len(data))
+        # self.sect_erase(addr, len(data))
 
         self.flash.Init(0, 0, 2)
         for i in range(0, len(data)//self.PAGE_SIZE):

@@ -16,6 +16,9 @@ sk.connect(('127.0.0.1',1234))  # 尝试连接服务器
 
 while True:
     info = input('>>>')         # 信息发送
+    if info=='':
+        sk.close()
+        info='---hello----'
 
     sk.send(bytes(info,encoding='utf-8'))
     ret = sk.recv(1024)         # 信息接收

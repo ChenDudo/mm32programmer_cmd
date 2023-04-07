@@ -8,21 +8,19 @@
 @Desc    :   None
 """
 
-import os
-import sys
-import argparse
-import json
-# import demjson
-# import pyocd
-
+import time
 import device
 import xlink
 
-from time import sleep
 from pyocd.probe import aggregator
 from pyocd.coresight import dap, ap, cortex_m
 
+# Debug
+Debug = 1
+DonePrint = 0
+timeShow = 1
 
+# Flash Define
 FLASH_KEYR_addr     =  (0x40022000 + 0x04)
 FLASH_OPTKEYR_addr  =  (0x40022000 + 0x08)
 FLASH_SR_addr       =  (0x40022000 + 0x0C)
@@ -43,15 +41,12 @@ FLASH_SR_PGERR      =  (1 << 2)
 FLASH_SR_WRPRTERR   =  (1 << 4)
 FLASH_SR_EOP        =  (1 << 5)
 
+def formatTime():
+    return time.strftime("[%Y-%m-%d %H:%M:%S]", (time.localtime(time.time())))
 
-def get_path():
-    return os.getcwd()      #.replace('\\','/')
-#     if getattr(sys, 'frozen', False):
-#         application_path = sys._MEIPASS
-#     else:
-#         application_path = os.path.dirname(os.path.abspath(__file__))  # os.path.dirname(__file__)
-#     return application_path
-
+def log_print(text):
+    if Debug:
+        print("%s %s" % (formatTime(), text))
 
 class returnJson():
     def __init__(self):
@@ -84,8 +79,8 @@ class returnJson():
     def appendMes(self, str):
         self.owndict['message'] = self.owndict['message'] + (str)
 
-    def output(self):
-        return json.dumps(self.owndict)
+    # def output(self):
+    #     return json.dumps(self.owndict)
 
 
 class LinkerObject(returnJson):
@@ -124,258 +119,256 @@ class LinkerObject(returnJson):
     def setWrbuff(self, data):
         self.wrbuff = data
 
-    ############################################################################
-    # step 1: linker handle  (devicelist)
-    ############################################################################
-    def outputGetLinker(self):
-        self._getLinker()
+    # ### local function
+    # def _getLinker(self):
+    #     self.daplinks = aggregator.DebugProbeAggregator.get_all_connected_probes()
+    #     return self.daplinks
 
-        # part A: save scanlist.json
-        # linkerIdx = []
-        # linkerUniqueID = []
-        # for i, daplink in enumerate(self.daplinks):
-        #     linkerIdx.append(i)
-        #     linkerUniqueID.append(daplink.unique_id+','+daplink.product_name+','+daplink.vendor_name)
-        #     # linkerUniqueID.append(self.daplinks[i].unique_id+','+self.daplinks[i].product_name+','+self.daplinks[i].vendor_name)
-        # dicUUID  = dict(zip(linkerIdx, linkerUniqueID))
-        # with open(get_path()+"\\scanlist.json","w+",encoding='utf-8') as f:
-        #     json.dump(dicUUID, f)
-        
-        # part B: return json string
+    ############################################################################
+    # step 1: scan Linker
+    # return 0: scan ok
+    # return 6: connect Target DAP failed
+    ############################################################################
+    def scanLinker(self):
+        self.daplinks = aggregator.DebugProbeAggregator.get_all_connected_probes()
+        if not len(self.daplinks):
+            self.setCode(6)
+            self.appendMes("ERROR: MM32LINK Not Found. Please Check LINK Power.")
+            return
+        # return json string
         for i, daplink in enumerate(self.daplinks):
             linker_dict = {
             'uid' : '',
             'product' : '',
             'vendor' : ''
             }
-            linker_dict['uid'] = daplink.unique_id
-            linker_dict['product'] = daplink.product_name
-            linker_dict['vendor'] = daplink.vendor_name
+            linker_dict['uid']      = daplink.unique_id
+            linker_dict['product']  = daplink.product_name
+            linker_dict['vendor']   = daplink.vendor_name
             self.owndict['data'].append(linker_dict)
-        
-        self.setCode(0)
-        self.appendMes("[info] Get device list success.")
-        print(self.owndict)
-
-    def _getLinker(self):
-        self.daplinks = aggregator.DebugProbeAggregator.get_all_connected_probes()
-        return self.daplinks
-    
-
-    ############################################################################
-    # step 2: connect Device (connectDevice)
-    ############################################################################
-    def selectLinker(self, idx = 0):
-        if self.selectIdx >= len(self.daplinks):
-            self.setCode(1)
-            self.appendMes("[error] select Linker idx is Out-Of-Range: "+len(self.deviceUIDs)+'.')
-        else:
-            selectUID = self.daplinks[self.selectIdx].unique_id
-            self.appendMes("[info] You select idx="+str(idx)+", device UID:"+str(selectUID)+'.')
-            # connect Target Decive
-            if not self._connectDAP():
-                cpuinfostr = ''
-                devidstr = ''
-                if (self.CPUINFO):
-                    cpuinfostr = self.CPUINFO[0] + ' r'+str(self.CPUINFO[1])+'p'+str(self.CPUINFO[2])
-                if (self.MCUID == 0x0BB11477) or (self.MCUID == 0x0BC11477):
-                    devid = self.M0_DEV_ID
-                else:
-                    devid = self.Mx_DEV_ID
-                mcuInfo_dict = {
-                    'MCU_ID' : 0,
-                    'CPU_INFO' : '',
-                    'DEV_ID' : 0
-                }
-                mcuInfo_dict['MCU_ID'] = self.MCUID
-                mcuInfo_dict['CPU_INFO'] = cpuinfostr
-                mcuInfo_dict['DEV_ID'] = devid
-                self.owndict['data'].append(mcuInfo_dict)
-                self.setCode(0)
-                self.appendMes("[info] Target connnect Pass.")
-            else:
-                self.setCode(2)
-                self.appendMes("[error] Target connect Failed.")
-        print(self.owndict)
+        # self.setCode(0)
+        # self.appendMes("INFO: Get device list success.")
 
     # connect device
-    def _connectDAP(self):
+    ## return 0: OK
+    ## return 1: connect failed
+    def _connectDAP__(self):
         try:
             # Start Connect
-            self._getLinker()
             self.daplink = self.daplinks[self.selectIdx]
             self.daplink.set_clock(self.speed)
             self.daplink.open()
+            # time.sleep(0.3)
             # Get DP
-            iDP = dap.DebugPort(self.daplink, None)
-            iDP.init()
-            iDP.power_up_debug()
-            self.MCUID = iDP.read_id_code()
+            self.target_iDP = dap.DebugPort(self.daplink, None)
+            self.target_iDP.init()
+            self.target_iDP.power_up_debug()
+            # time.sleep(0.2)
             # Get AP
-            iAP = ap.AHB_AP(iDP, 0)
-            iAP.init()
-            self.CPUINFO = cortex_m.CortexM(None, iAP)._read_core_type()
+            self.target_iAP = ap.AHB_AP(self.target_iDP, 0)
+            self.target_iAP.init()
+            # time.sleep(0.1)
             # Get xLINK
-            self.xlk = xlink.XLink(cortex_m.CortexM(None, iAP))
-            # Get DEVinfo
-            self.M0_DEV_ID = self.xlk.read_mem_U32(0x40013400, 1)[0]
-            self.Mx_DEV_ID = self.xlk.read_mem_U32(0x40007080, 1)[0]
-            #  # Get UID
-            # self.UID1 = self.xlk.read_mem_U32(0x1FFFF7E8, 1)[0]
-            # self.UID2 = self.xlk.read_mem_U32(0x1FFFF7EC, 1)[0]
-            # self.UID3 = self.xlk.read_mem_U32(0x1FFFF7F0, 1)[0]
+            self.xlk = xlink.XLink(cortex_m.CortexM(None, self.target_iAP))
+            # time.sleep(0.1)
+            # self.xlk.reset()
+            # self.xlk.close()
         except Exception as e:
-            self.daplink.close()
+            log_print("Message: connect dap failed.%s" % (str(e)))
+            try:
+                self.daplink.close()
+            except Exception as e:
+                log_print("WARNING: LINK closed.")
             return 1
         return 0
-
-    def _quit_Reset(self, reset):
-        try:
-            # Start Connect
-            self._getLinker()
-            self.daplink = self.daplinks[self.selectIdx]
-            self.daplink.open()
-            # Get DP
-            iDP = dap.DebugPort(self.daplink, None)
-            iDP.init()
-            # Get AP
-            iAP = ap.AHB_AP(iDP, 0)
-            iAP.init()
-            self.xlk = xlink.XLink(cortex_m.CortexM(None, iAP))
-            if reset:
-                self.xlk.reset()
-            self.xlk.close()
-        except Exception as e:
-            self.daplink.close()
-            return 1
-        return 0
-
-    def _getChipUUID(self):
-        if not self._connectDAP():
-            print("[info] MCU_ID = 0x%08X" % self.MCUID)
-            if (self.CPUINFO):
-                print("[info] CPU core is %s r%dp%d" % self.CPUINFO)
-            if (self.MCUID == 0x0BB11477) or (self.MCUID == 0x0BC11477):
-                print("[info] DEV_ID = 0x%X" % self.M0_DEV_ID)
-            else:
-                print("[info] DEV_ID = 0x%X" % self.Mx_DEV_ID)
-            return 0
-        else:
-            return 1
-
 
     ############################################################################
-    def earseSector(self):
-        if not self._connectDAP():
+    # step 2: scan Target MCU
+    # return 1: idx out of range
+    # return 2: Access Target MCU DAP Failed
+    ############################################################################
+    def scanTargetMCU(self):
+        if self.selectIdx >= len(self.daplinks):
             try:
-                try:
-                    self.dev = device.Devices[self.target](self.xlk)
-                except Exception as e:
-                    self.appendMes("[error] Device connect Failed.")
-                    self.setCode(1)
-                self.dev.sect_erase(self.oprateAddr, self.oprateSize)
-                self.appendMes("[info] Earse Success.")
-                self.setCode(0)
-            except Exception as e:
-                self.appendMes("[info] Earse Failed.")
                 self.setCode(1)
+                self.appendMes("ERROR: select Linker_idx Out Of Range:%d." % (len(self.deviceUIDs)))
+            except Exception as e:
+                self.appendMes("ERROR: Please use 'devicelist' scan again.")
         else:
-            self.appendMes("[error] Linker connect Failed.")
-            self.setCode(1)
-        print(self.owndict)
+            try:
+                pUID = self.daplinks[self.selectIdx].unique_id
+                pName = self.daplinks[self.selectIdx].product_name
+                self.appendMes("INFO: Selected linker_idx=%d, linker_UID=%s, linker_name=%s." % (self.selectIdx, pUID, pName))
 
+                if not self._connectDAP__():
+                    # init DEVInfo
+                    cpuinfo = ''
+                    devid = ''
+                    mcuInfo_dict = {
+                        'MCU_ID' : 0,
+                        'CPU_INFO' : '',
+                        'DEV_ID' : 0
+                    }
+                    # Get DEVInfo
+                    self.MCUID = self.target_iDP.read_id_code()
+                    self.M0_DEV_ID = self.xlk.read_mem_U32(0x40013400, 1)[0]
+                    self.Mx_DEV_ID = self.xlk.read_mem_U32(0x40007080, 1)[0]
+                    self.CPUINFO = cortex_m.CortexM(None, self.target_iAP)._read_core_type()
+                    if (self.CPUINFO):
+                        cpuinfo = self.CPUINFO[0] + ' r'+str(self.CPUINFO[1])+'p'+str(self.CPUINFO[2])
+                    if (self.MCUID == 0x0BB11477) or (self.MCUID == 0x0BC11477):
+                        devid = self.M0_DEV_ID
+                    else:
+                        devid = self.Mx_DEV_ID
+                    # Set DEVInfo
+                    mcuInfo_dict['MCU_ID'] = self.MCUID
+                    mcuInfo_dict['CPU_INFO'] = cpuinfo
+                    mcuInfo_dict['DEV_ID'] = devid
+                    self.owndict['data'].append(mcuInfo_dict)
+                    # Return True
+                    self.xlk.close()
+                    # self.daplink.close()
+                    # self.setCode(0)
+                    # self.appendMes("INFO: Scan Target MCU.")
+                else:
+                    self.setCode(2)
+                    self.appendMes("ERROR: Access Target MCU DAP Failed.")
+            except Exception as e:
+                log_print("Message: %s" % (str(e)))
+                self.setCode(3)
+                self.appendMes("ERROR: oprate Failed.")
+            try:
+                self.xlk = None
+                self.target_iDP = None
+                self.target_iAP = None
+                self.daplink.close()
+            except Exception as e:
+                log_print("WARNING: LINK close.%s" % (str(e)))
+                # self.setCode(0)
+                self.appendMes("WARNING: Link Close.")
+
+    ############################################################################
+    # step 3: connect Target MCU
+    # return 0: OK
+    # return 5: connect Target DAP failed
+    ############################################################################
+    def connectTargetMCU(self):
+        if self._connectDAP__():
+            self.setCode(5)
+            self.appendMes("ERROR: Access Target MCU DAP Failed.")
+        else:
+            try:
+                self.dev = device.Devices[self.target](self.xlk)
+                # self.setCode(0)
+                # self.appendMes("INFO: Connected Target MCU Success.")
+            except Exception as e:
+                log_print("Message: open device failed.%s" % (str(e)))
+                self.setCode(1)
+                self.appendMes("ERROR: Access Target Device Failed.")
+
+    ############################################################################
+    # step 4.1 : earse Chip
+    # return 3: operate failed
     ############################################################################
     def earseChip(self):
-        errcode = 0
-        if not self._connectDAP():
-            try:
-                try:
-                    self.dev = device.Devices[self.target](self.xlk)
-                except Exception as e:
-                    self.appendMes("[error] Device connect Failed.")
-                    self.setCode(1)
-                self.dev.chip_erase()
-                self.appendMes("[info] Earse Success.")
-                self.setCode(0)
-            except Exception as e:
-                self.appendMes("[info] Earse Failed.")
-                self.setCode(0)
-        else:
-            self.appendMes("[error] Linker connect Failed.")
-            self.setCode(1)
-        print(self.owndict)
+        try:
+            self.dev.chip_erase()
+            # self.setCode(0)
+            # self.appendMes("INFO: Earse Chip Success.")
+        except Exception as e:
+            log_print("Message: earse chip failed.%s" % (str(e)))
+            self.setCode(3)
+            self.appendMes("INFO: Earse Chip Failed.")
 
+    ############################################################################
+    # step 4.2 : earse Sector
+    # return 3: operate failed
+    ############################################################################
+    def earseSector(self):
+        try:
+            self.dev.sect_erase(self.oprateAddr, self.oprateSize)
+            # self.setCode(0)
+            # self.appendMes("INFO: Earse Sector Success.")
+        except Exception as e:
+            log_print("Message: earse sector failed.%s" % (str(e)))
+            self.setCode(3)
+            self.appendMes("INFO: Earse Sector Failed.")
+
+    ############################################################################
+    # step 4.3 : read Chip
+    # return 3: operate failed
     ############################################################################
     def readChip(self):
-        self.setCode(0)
-        if not self._connectDAP():
-            try:
-                try:
-                    self.dev = device.Devices[self.target](self.xlk)
-                except Exception as e:
-                    self.appendMes("[error] Device connect Failed.")
-                    self.setCode(1)
-                self.dev.chip_read(self.oprateAddr, self.oprateSize, self.rdbuff)
-                for i in self.rdbuff:
-                    self.owndict['data'].append(i)
-                self.appendMes("[info] Read Success.")
-            except Exception as e:
-                self.appendMes("[error] Read Failed.")
-                self.setCode(1)
-        print(self.owndict)
+        try:
+            self.owndict['data'] = []
+            self.rdbuff = []
+            if timeShow:
+                log_print("read begin...")
+            self.dev.chip_read(self.oprateAddr, self.oprateSize, self.rdbuff)
+            for i in self.rdbuff:
+                self.owndict['data'].append(i)
+            if timeShow:
+                log_print("read end...")
+            # self.setCode(0)
+            # self.appendMes("INFO: Read Success.")
+        except Exception as e:
+            log_print("Message: read chip failed.%s" % (str(e)))
+            self.setCode(3)
+            self.appendMes("ERROR: Read Failed.")
 
+    ############################################################################
+    # step 4.4 : write Chip
+    # return 3: operate failed
     ############################################################################
     def writeChip(self):
-        self.setCode(0)
-        if not self._connectDAP():
-            try:
-                try:
-                    self.dev = device.Devices[self.target](self.xlk)
-                except Exception as e:
-                    self.appendMes("[error] Device connect Failed")
-                    self.setCode(1)
-                self.dev.chip_write(self.oprateAddr, self.wrbuff)
-                self.appendMes("[info] Write Success")
-            except Exception as e:
-                self.appendMes("[error] Write Failed")
-                self.setCode(1)
-        print(self.owndict)
+        try:
+            # startTime = time.time()
+            if timeShow:
+                log_print("write begin...")
+            self.dev.chip_write(self.oprateAddr, self.wrbuff)
+            if timeShow:
+                log_print("write end...")
+            # spendTime = time.time() - startTime
+            # print("--- Spend: %.2f." % (spendTime))
+            # self.setCode(0)
+            # self.appendMes("INFO: Write Success")
+        except Exception as e:
+            log_print("Message: chip write failed.%s" % (str(e)))
+            self.setCode(3)
+            self.appendMes("ERROR: Write Failed")
 
+    ############################################################################
+    # step 4.5 : read Mem U32
+    # return 3: operate failed
     ############################################################################
     def readMem32(self, addr, count = 1):
-        self.setCode(0)
-        if not self._connectDAP():
-            try:
-                readadr = addr
-                self.owndict['data'] = self.xlk.read_mem_U32(readadr, count)
-                self.appendMes("[info] readMem32 Success")
-            except Exception as e:
-                self.appendMes("[error] readMem32 Failed")
-                self.setCode(1)
-        print(self.owndict)
+        try:
+            self.owndict['data'] = self.xlk.read_mem_U32(addr, count)
+            # self.setCode(0)
+            # self.appendMes("INFO: readMem32 Success")
+        except Exception as e:
+            log_print("Message: read memU32 failed.%s" % (str(e)))
+            self.setCode(3)
+            self.appendMes("ERROR: readMem32 Failed")
 
+    ############################################################################
+    # step 4.6 : write Mem U32
+    # return 3: operate failed
     ############################################################################
     def writeMem32(self, addr, dat):
-        self.setCode(0)
-        if not self._connectDAP():
-            try:
-                try:
-                    self.dev = device.Devices[self.target](self.xlk)
-                except Exception as e:
-                    self.appendMes("[error] Device connect Failed")
-                    self.setCode(1)
-                waddr = addr & 0xFFFFFFFC
-                for wdat in dat:
-                    self.xlk.write_U32(waddr, wdat & 0xFFFFFFFF)
-                    waddr = waddr + 4
-                self.appendMes("[info] writeMem32 Success")
-            except Exception as e:
-                self.appendMes("[error] writeMem32 Failed")
-                self.setCode(1)
-        print(self.owndict)
+        try:
+            waddr = addr & 0xFFFFFFFC
+            for wdat in dat:
+                self.xlk.write_U32(waddr, wdat & 0xFFFFFFFF)
+                waddr = waddr + 4
+            # self.setCode(0)
+            # self.appendMes("INFO: writeMem32 Success")
+        except Exception as e:
+            log_print("Message: write mem U32 failed.%s" % (str(e)))
+            self.setCode(3)
+            self.appendMes("ERROR: writeMem32 Failed")
 
-
-    ############################################################################
+    ## local function
     def _readU32Dat(self, addr, count = 1):
         readadr = addr & 0xFFFFFFFC
         readdat = []
@@ -384,21 +377,20 @@ class LinkerObject(returnJson):
             count = count - 1
             readadr = readadr + 4
             readdat.append(hex(dat))
-        self.appendMes("[info] Read 0x%08X: " % addr)
+        self.appendMes("INFO: Read 0x%08X: " % addr)
         for readitem in readdat:
             self.appendMes(readitem+',')
-        self.appendMes('END.')
 
     def _waitFlashSR(self):
         retrytimes = 5
         read_Flash_SR = self.xlk.read_U32(FLASH_SR_addr)
         while retrytimes and (read_Flash_SR & 0x01):
             read_Flash_SR = self.xlk.read_U32(FLASH_SR_addr)
-            sleep(0.1)
+            time.sleep(0.1)
             retrytimes = retrytimes - 1
         if retrytimes == 0:
-            self.setCode(1)
-            self.appendMes("[warning] Wait Timeout, now FLash.SR = 0x%08x." % read_Flash_SR)
+            self.setCode(4)
+            self.appendMes("WARNING: Wait Timeout, now FLash.SR = 0x%08x." % read_Flash_SR)
         read_Flash_CR = self.xlk.read_U32(FLASH_CR_addr)
         self.xlk.write_U32(FLASH_CR_addr, read_Flash_CR & (~(FLASH_CR_STRT | FLASH_CR_OPTER | FLASH_CR_OPTPG | FLASH_CR_MER | FLASH_CR_PER | FLASH_CR_PG)))
         self.xlk.write_U32(FLASH_SR_addr, FLASH_SR_EOP | FLASH_SR_WRPRTERR | FLASH_SR_PGERR)
@@ -420,86 +412,142 @@ class LinkerObject(returnJson):
     def _lockFLash(self):
         self.xlk.write_U32(FLASH_CR_addr, FLASH_CR_LOCK)
         read_Flash_CR = self.xlk.read_U32(FLASH_CR_addr)
-        self.appendMes("[info] Flash Lock, Flash.CR = " +hex(read_Flash_CR)+'.')
+        self.appendMes("INFO: Flash Lock, Flash.CR = " +hex(read_Flash_CR)+'.')
 
     def _en_OPTPG(self):
         read_Flash_CR = self.xlk.read_U32(FLASH_CR_addr)
         self.xlk.write_U32(FLASH_CR_addr, FLASH_CR_OPTPG | read_Flash_CR)
         read_Flash_CR = self.xlk.read_U32(FLASH_CR_addr)
-        self.appendMes("[info] OPT.PG Enable, Flash.CR = " +hex(read_Flash_CR)+'.')
+        self.appendMes("INFO: OPT.PG Enable, Flash.CR = " +hex(read_Flash_CR)+'.')
 
     def _dis_OPTPG(self):
         read_Flash_CR = self.xlk.read_U32(FLASH_CR_addr)
         self.xlk.write_U32(FLASH_CR_addr, 0xFFFFFFEF & read_Flash_CR)
         read_Flash_CR = self.xlk.read_U32(FLASH_CR_addr)
-        self.appendMes("[info] OPT.PG Disable, Flash.CR = " +hex(read_Flash_CR)+'.')
+        self.appendMes("INFO: OPT.PG Disable, Flash.CR = " +hex(read_Flash_CR)+'.')
 
     def _en_OPTER(self):
         read_Flash_CR = self.xlk.read_U32(FLASH_CR_addr)
         self.xlk.write_U16(FLASH_CR_addr, FLASH_CR_OPTER | FLASH_CR_STRT | read_Flash_CR)
         read_Flash_CR = self.xlk.read_U32(FLASH_CR_addr)
-        self.appendMes("[info] OPT.ER Enable, Flash.CR = " +hex(read_Flash_CR)+'.')
+        self.appendMes("INFO: OPT.ER Enable, Flash.CR = " +hex(read_Flash_CR)+'.')
 
 
+    ############################################################################
+    # step 4.7 : option Byte Earse
+    # return 3: operate failed
     ############################################################################
     def optionByteEarse(self, addr):
-        self.setCode(0)
-        if not self._connectDAP():
-            try:
-                self._unlockFlash()
-                self._optEarse(addr)
-                self.appendMes("[info] OPT Earse Success.")
-                self._waitFlashSR()
-                self.owndict['data'] = self.xlk.read_mem_U32(0x1ffff800, 10)
-                # self._readU32Dat(addr, cnt)
-                self._readU32Dat(0x1ffff800, 10)
-            except Exception as e:
-                self.appendMes("[error] OPT Earse Failed.")
-                self.setCode(1)
-        print(self.owndict)
-
+        try:
+            self._unlockFlash()
+            self._optEarse(addr)
+            self._waitFlashSR()
+            self.owndict['data'] = self.xlk.read_mem_U32(0x1ffff800, 10)
+            # self.setCode(0)
+            # self.appendMes("INFO: OPT Earse Success.")
+            # # if Debug:
+            #     self._readU32Dat(addr, 10)  # self._readU32Dat(0x1ffff800, 10)
+        except Exception as e:
+            log_print("Message: opt earse or read mem32 failed.%s" % (str(e)))
+            self.setCode(3)
+            self.appendMes("ERROR: OPT Earse Failed.")
+        if Debug:
+            print(self.owndict)
 
     ############################################################################
+    # step 4.8 : option Byte Program
+    # return 3: operate failed
+    # return 4: Flash wait time out
+    ############################################################################
     def optionByteProgram(self, addr, dat):
-        self.setCode(0)
-        if not self._connectDAP():
-            try:
-                readAddr = addr & 0xFFFFFFFC
-                self._readU32Dat(readAddr, 10)
-                self._unlockFlash()
+        try:
+            readAddr = addr & 0xFFFFFFFC
+            self._readU32Dat(readAddr, 10)
+            self._unlockFlash()
+            waddr = addr
+            for wdat in dat:
+                wdat = wdat & 0xFFFF
+                self._unlockOPT()
+                self._en_OPTPG()
+                self.appendMes('INFO: write '+hex(waddr)+"="+hex(wdat)+'.')
+                self.xlk.write_U16(waddr, wdat)
+                self._waitFlashSR()
+                waddr = waddr + 2
+            self._dis_OPTPG()
+            self._lockFLash()
+            self.owndict['data'] = self.xlk.read_mem_U32(readAddr, 10)
+            if self.getCode() == 4:
+                self.appendMes("WARNING: Operate timeout.")
+        except Exception as e:
+            log_print("Message: Flash operate failed.%s" % (str(e)))
+            self.setCode(3)
+            self.appendMes("ERROR: OPT Program Failed.")
+        # self.xlk.reset()        # add reset
 
-                waddr = addr
-                for wdat in dat:
-                    wdat = wdat & 0xFFFF
-                    self._unlockOPT()
-                    self._en_OPTPG()
-                    self.appendMes('[info]: write '+hex(waddr)+"="+hex(wdat)+'.')
-                    self.xlk.write_U16(waddr, wdat)
-                    self._waitFlashSR()
-                    waddr = waddr + 2
-
-                self._dis_OPTPG()
-                self._lockFLash()
-
-                self.owndict['data'] = self.xlk.read_mem_U32(readAddr, 10)
-                if self.getCode() == 0:
-                    self.appendMes("[info] OPT Program Success.")
-                else:
-                    self.appendMes("[error] OPT Program Something error.")
-            except Exception as e:
-                self.appendMes("[error] OPT Program Failed.")
-                self.setCode(1)
-        self.xlk.reset()
-        print(self.owndict)
-
+    ############################################################################
+    # Special handle : hold and Earse F0010
+    # return 0: ok
+    # return 3: operate failed
+    ############################################################################
     def reEarseF0010(self):
-        self._getLinker()
-        self.daplink = self.daplinks[self.selectIdx]
-        self.daplink.set_clock(self.speed)
-        self.daplink.open()
+        # self._getLinker()
+        # self.daplink = self.daplinks[self.selectIdx]
+        # self.daplink.set_clock(self.speed)
+        # self.daplink.open()
         self.daplink._link._protocol.set_swj_pins(0, 0, 19945)
-        sleep(1)
-        self.earseChip()
+        time.sleep(1)
+        try:
+            dev = device.Devices['MM32F0010'](self.xlk)
+            dev.chip_erase()
+            # self.setCode(0)
+            # self.appendMes("INFO: reEarseF0010 Operate OK.")
+        except Exception as e:
+            log_print("Message: open Device or earse failed. %s" % (str(e)))
+            self.setCode(3)
+            self.appendMes("ERROR: Operate Failed.")
+
+    ############################################################################
+    # reset Target
+    # return 0: ok
+    # return 3: operate failed
+    ############################################################################
+    def resetTarget(self, type = 0):
+        try:
+            if (type == 0): # software reset
+                self.xlk.reset()
+                time.sleep(1)
+            elif (type == 1):   # hardware reset
+                self.target_iDP.set_reset_pin_low()
+                time.sleep(1)
+                self.target_iDP.set_reset_pin_high()
+                time.sleep(1)
+            else:
+                self.daplink._link._protocol.set_swj_pins(0, 0, 19945)
+            # self.setCode(0)
+            # self.appendMes("INFO: Operate OK.")
+        except Exception as e:
+            log_print("Message: target or link reset failed.%s" % (str(e)))
+            self.setCode(3)
+            self.appendMes("ERROR: Operate Failed.")
+
+    ############################################################################
+    # release Link
+    # return 0: ok
+    # return 3: operate failed
+    ############################################################################
+    def releaseLink(self):
+        if (self.xlk):
+            try:
+                self.xlk.close()
+            except Exception as e:
+                log_print("Message: XLk close() failed.%s" % (str(e)))
+        if (self.daplink):
+            try:
+                self.daplink.close()
+            except Exception as e:
+                log_print("Message: Link close() failed.%s" % (str(e)))
+        # self.setCode(0)
+        # self.appendMes("INFO: Operate OK.")
 
 
 def jsonhandle(linker, jsonText):
@@ -522,16 +570,20 @@ def jsonhandle(linker, jsonText):
     if ("mcu" in jsonText):
         mcu = jsonText['mcu']
     else:
-        mcu = 'mm32f0010'
+        mcu = 'MM32F0010'
     linker.setTarget(mcu)
 
     # cmd handle
     cmd = jsonText['command']
     linker.uninit()
     if (cmd == 'devicelist'):
-        linker.outputGetLinker()
+        linker.scanLinker()
+    elif (cmd == 'scanTarget'):
+        linker.scanTargetMCU()
     elif (cmd == 'connectDevice'):
-        linker.selectLinker()
+        linker.connectTargetMCU()
+    elif (cmd == 'releaseDevice'):
+        linker.releaseLink()
     elif (cmd == 'readMemory'):
         linker.oprateAddr = jsonText['address']
         linker.oprateSize = jsonText['length']
@@ -563,15 +615,15 @@ def jsonhandle(linker, jsonText):
         linker.optionByteEarse(addr)
     elif (cmd == 'reEarseF0010'):
         linker.reEarseF0010()
-    elif (cmd == 'quit_reset'):
-        if ("reset" in jsonText):
-            if (jsonText['reset'] == 0):
-                reset = 0
-            else:
-                reset = 1
+    elif (cmd == 'resetTarget'):
+        if ("rstType" in jsonText):
+            type = jsonText['rstType']
         else:
-            reset = 1
-        linker._quit_Reset(reset)
+            type = 0
+        linker.resetTarget(type)
+    if DonePrint:
+        log_print(str(linker.owndict))
+    
     return linker.owndict
 
 
