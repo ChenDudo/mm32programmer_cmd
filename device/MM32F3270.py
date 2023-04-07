@@ -9,7 +9,7 @@ class MM32F3270(object):
 
     PAGE_SIZE = 1024 * 1
     SECT_SIZE = 1024 * 1
-    CHIP_SIZE = 1024 * 64
+    CHIP_SIZE = 1024 * 512
 
     def __init__(self, xlink):
         super(MM32F3270, self).__init__()
@@ -74,7 +74,7 @@ MM32F3270_flash_algo = {
     'pc_EraseChip'       : 0x20000153,
     'pc_BlankCheck'      : 0x200001A3,
     'pc_Read'            : 0x12000001F,
-
+    
     'static_base'        : 0x20000400,
     'begin_data'         : 0x20000800,
     'begin_stack'        : 0x20001000,
@@ -83,10 +83,10 @@ MM32F3270_flash_algo = {
 
     # Relative region addresses and sizes
     'ro_start'           : 0x00000000,
-    'ro_size'            : 0x00000210,
-    'rw_start'           : 0x00000210,
+    'ro_size'            : 0x00000204,
+    'rw_start'           : 0x00000204,
     'rw_size'            : 0x00000004,
-    'zi_start'           : 0x00000214,
+    'zi_start'           : 0x00000208,
     'zi_size'            : 0x00000000,
 
     # Flash information

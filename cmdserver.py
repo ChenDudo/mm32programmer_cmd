@@ -126,7 +126,7 @@ def openServer(port):
         while True:
             try:
                 ret = conn.recv(1024*256)
-                if ret == b'bye':
+                if ret == b'bye\r\n' or ret == b'bye':
                     conn.send(b'bye')
                     slog_print("INFO: Client request Closed.")
                     return

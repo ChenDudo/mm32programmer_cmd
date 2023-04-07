@@ -11,7 +11,7 @@ from .flash import Flash
 class MM32F0010(object):
     CHIP_CORE = 'Cortex-M0'
 
-    PAGE_SIZE = 1024 * 1 // 2
+    PAGE_SIZE = 1024 * 1
     SECT_SIZE = 1024 * 1
     CHIP_SIZE = 1024 * 16
 
@@ -78,9 +78,9 @@ MM32F0010_flash_algo = {
     'pc_BlankCheck'      : 0x200001A3,
     'pc_Read'            : 0x12000001F,
     
-    'static_base'        : 0x20000300,
-    'begin_data'         : 0x20000400,
-    'begin_stack'        : 0x20000800,
+    'static_base'        : 0x20000400,
+    'begin_data'         : 0x20000800,
+    'begin_stack'        : 0x20001000,
 
     'analyzer_supported' : False,
 
@@ -95,7 +95,7 @@ MM32F0010_flash_algo = {
     # Flash information
     'flash_start'        : 0x08000000,
     'flash_size'         : 0x00004000,
-    'flash_page_size'    : 0x00000400//2,
+    'flash_page_size'    : 0x00000400,
     'sector_sizes': (
         (0x00000, 0x00400),
     )

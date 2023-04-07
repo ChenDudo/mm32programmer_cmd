@@ -11,9 +11,9 @@ from .flash import Flash
 class MM32F0130(object):
     CHIP_CORE = 'Cortex-M0'
 
-    PAGE_SIZE = 1024 * 1 // 2
+    PAGE_SIZE = 1024 * 1
     SECT_SIZE = 1024 * 1
-    CHIP_SIZE = 1024 * 32
+    CHIP_SIZE = 1024 * 64
 
     def __init__(self, xlink):
         super(MM32F0130, self).__init__()
