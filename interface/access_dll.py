@@ -11,7 +11,7 @@ class AccessDll():
                     ("database", c_ubyte * BUFF_SIZE)]
 
     def __init__(self, path):
-        self.systemConfig = self.TRSystemConfig((c_ubyte * BUFF_SIZE)(*b"Temp"), (c_ubyte * BUFF_SIZE)(*b"mmData.db"))
+        self.systemConfig = self.TRSystemConfig((c_ubyte * BUFF_SIZE)(*b"DB"), (c_ubyte * BUFF_SIZE)(*b"mmData.db"))
         self.path = path
         self.dll = cdll.LoadLibrary(self.path)
         self.initStatus = self.dll.initSystemConfig(self.systemConfig)

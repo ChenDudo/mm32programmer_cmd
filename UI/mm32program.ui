@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>621</width>
-    <height>579</height>
+    <height>552</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -65,7 +65,16 @@
          </property>
         </column>
        </widget>
-       <widget class="ReadFlash" name="flash" native="true"/>
+       <widget class="QTabWidget" name="tabWidget">
+        <property name="currentIndex">
+         <number>0</number>
+        </property>
+        <widget class="ReadFlash" name="flash">
+         <attribute name="title">
+          <string>Flash</string>
+         </attribute>
+        </widget>
+       </widget>
       </widget>
       <widget class="QTextBrowser" name="textBrowser">
        <property name="layoutDirection">
@@ -91,6 +100,11 @@
     </property>
     <addaction name="loadProgrammingFile"/>
     <addaction name="saveProgrammingFile"/>
+    <addaction name="separator"/>
+    <addaction name="mergeFile"/>
+    <addaction name="separator"/>
+    <addaction name="recentProject"/>
+    <addaction name="separator"/>
     <addaction name="exit"/>
    </widget>
    <widget class="QMenu" name="menu_P">
@@ -109,33 +123,36 @@
     <property name="title">
      <string>Operate</string>
     </property>
-    <addaction name="checkLink"/>
+    <addaction name="chipBlank"/>
     <addaction name="separator"/>
-    <addaction name="chipLink"/>
-    <addaction name="separator"/>
-    <addaction name="cheakBlank"/>
-    <addaction name="erasureChip"/>
+    <addaction name="eraseChip"/>
+    <addaction name="eraseSector"/>
     <addaction name="separator"/>
     <addaction name="programmeChip"/>
-    <addaction name="pyCode"/>
     <addaction name="separator"/>
-    <addaction name="verify"/>
-    <addaction name="unlockChip"/>
+    <addaction name="verifyChip"/>
     <addaction name="separator"/>
     <addaction name="readChip"/>
     <addaction name="writeChip"/>
-    <addaction name="separator"/>
-    <addaction name="options"/>
    </widget>
    <widget class="QMenu" name="menu_H">
     <property name="title">
      <string>Help</string>
     </property>
     <addaction name="about"/>
+    <addaction name="upgrade"/>
+   </widget>
+   <widget class="QMenu" name="menuOption">
+    <property name="title">
+     <string>Setting</string>
+    </property>
+    <addaction name="linkCfg"/>
+    <addaction name="options"/>
    </widget>
    <addaction name="menucaidan"/>
    <addaction name="menu_P"/>
    <addaction name="menu_O"/>
+   <addaction name="menuOption"/>
    <addaction name="menu_H"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
@@ -157,15 +174,16 @@
    <addaction name="checkLink"/>
    <addaction name="chipLink"/>
    <addaction name="separator"/>
-   <addaction name="erasureChip"/>
+   <addaction name="eraseChip"/>
    <addaction name="programmeChip"/>
-   <addaction name="unlockChip"/>
    <addaction name="separator"/>
    <addaction name="readChip"/>
    <addaction name="writeChip"/>
    <addaction name="separator"/>
    <addaction name="loadProgrammingFile"/>
    <addaction name="saveProgrammingFile"/>
+   <addaction name="mergeFile"/>
+   <addaction name="reloadFile"/>
   </widget>
   <action name="newProject">
    <property name="icon">
@@ -212,7 +230,7 @@
     <string>Save Project As...</string>
    </property>
   </action>
-  <action name="erasureChip">
+  <action name="eraseChip">
    <property name="icon">
     <iconset resource="resource.qrc">
      <normaloff>:/icon/icon/erase.png</normaloff>:/icon/icon/erase.png</iconset>
@@ -221,7 +239,7 @@
     <string>Erase Chip</string>
    </property>
    <property name="shortcut">
-    <string>F4</string>
+    <string>F3</string>
    </property>
   </action>
   <action name="programmeChip">
@@ -234,15 +252,6 @@
    </property>
    <property name="shortcut">
     <string>F5</string>
-   </property>
-  </action>
-  <action name="unlockChip">
-   <property name="icon">
-    <iconset resource="resource.qrc">
-     <normaloff>:/icon/icon/lock.png</normaloff>:/icon/icon/lock.png</iconset>
-   </property>
-   <property name="text">
-    <string>Unlock Chip</string>
    </property>
   </action>
   <action name="loadProgrammingFile">
@@ -277,7 +286,13 @@
      <normaloff>:/icon/icon/read.png</normaloff>:/icon/icon/read.png</iconset>
    </property>
    <property name="text">
-    <string>Read Chip</string>
+    <string>Read Data</string>
+   </property>
+   <property name="toolTip">
+    <string>Read Data</string>
+   </property>
+   <property name="shortcut">
+    <string>F7</string>
    </property>
   </action>
   <action name="writeChip">
@@ -286,12 +301,13 @@
      <normaloff>:/icon/icon/write.png</normaloff>:/icon/icon/write.png</iconset>
    </property>
    <property name="text">
-    <string>Write Chip</string>
+    <string>Write Data</string>
    </property>
-  </action>
-  <action name="options">
-   <property name="text">
-    <string>Options</string>
+   <property name="toolTip">
+    <string>Write Data</string>
+   </property>
+   <property name="shortcut">
+    <string>F8</string>
    </property>
   </action>
   <action name="about">
@@ -313,7 +329,10 @@
      <normaloff>:/icon/icon/disConnect.png</normaloff>:/icon/icon/disConnect.png</iconset>
    </property>
    <property name="text">
-    <string>Programmer Connect</string>
+    <string>Connect Programmer</string>
+   </property>
+   <property name="toolTip">
+    <string>Connect Programmer</string>
    </property>
   </action>
   <action name="chipLink">
@@ -322,43 +341,98 @@
      <normaloff>:/icon/icon/chip.png</normaloff>:/icon/icon/chip.png</iconset>
    </property>
    <property name="text">
-    <string>Chip Link</string>
+    <string>Connect chip</string>
+   </property>
+   <property name="toolTip">
+    <string>Connect Chip</string>
    </property>
   </action>
-  <action name="cheakBlank">
+  <action name="chipBlank">
    <property name="text">
-    <string>Cheak Blank</string>
+    <string>Blank Chip</string>
    </property>
    <property name="shortcut">
     <string>F2</string>
    </property>
   </action>
-  <action name="pyCode">
+  <action name="verifyChip">
    <property name="text">
-    <string>Program and Verify</string>
+    <string>Verify Chip</string>
    </property>
    <property name="shortcut">
     <string>F6</string>
    </property>
   </action>
-  <action name="verify">
-   <property name="text">
-    <string>Verify</string>
-   </property>
-   <property name="shortcut">
-    <string>F8</string>
-   </property>
-  </action>
   <action name="modifyProject">
    <property name="icon">
     <iconset resource="resource.qrc">
-     <normaloff>:/icon/icon/option.png</normaloff>:/icon/icon/option.png</iconset>
+     <normaloff>:/icon/icon/file.png</normaloff>:/icon/icon/file.png</iconset>
    </property>
    <property name="text">
     <string>modify Project</string>
    </property>
+   <property name="toolTip">
+    <string>Modify Project</string>
+   </property>
    <property name="shortcut">
     <string>Ctrl+M</string>
+   </property>
+  </action>
+  <action name="eraseSector">
+   <property name="text">
+    <string>Erase Sector</string>
+   </property>
+   <property name="shortcut">
+    <string>F4</string>
+   </property>
+  </action>
+  <action name="mergeFile">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/icon/icon/fileMerge.png</normaloff>:/icon/icon/fileMerge.png</iconset>
+   </property>
+   <property name="text">
+    <string>Merge Data File</string>
+   </property>
+   <property name="toolTip">
+    <string>merge file</string>
+   </property>
+  </action>
+  <action name="linkCfg">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/icon/icon/MMLinkConfig.png</normaloff>:/icon/icon/MMLinkConfig.png</iconset>
+   </property>
+   <property name="text">
+    <string>MM32 Link Config</string>
+   </property>
+  </action>
+  <action name="reloadFile">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/icon/icon/reload.png</normaloff>:/icon/icon/reload.png</iconset>
+   </property>
+   <property name="text">
+    <string>Reload Data From File</string>
+   </property>
+  </action>
+  <action name="recentProject">
+   <property name="text">
+    <string>Recent Project</string>
+   </property>
+  </action>
+  <action name="options">
+   <property name="text">
+    <string>Options</string>
+   </property>
+  </action>
+  <action name="upgrade">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/icon/icon/upgrade.png</normaloff>:/icon/icon/upgrade.png</iconset>
+   </property>
+   <property name="text">
+    <string>Upgrade</string>
    </property>
   </action>
  </widget>
