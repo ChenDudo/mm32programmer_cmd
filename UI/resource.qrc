@@ -1,7 +1,5 @@
 <RCC>
   <qresource prefix="icon">
-    <file>icon/read.png</file>
-    <file>icon/write.png</file>
     <file>icon/1.png</file>
     <file>icon/2.png</file>
     <file>icon/3.png</file>
@@ -9,17 +7,30 @@
     <file>icon/5.png</file>
     <file>icon/6.png</file>
     <file>icon/chip.png</file>
+    <file>icon/chipMatch.png</file>
+    <file>icon/chipNotMatch.png</file>
     <file>icon/connect.png</file>
     <file>icon/disConnect.png</file>
     <file>icon/erase.png</file>
+    <file>icon/file.ico</file>
+    <file>icon/file.png</file>
+    <file>icon/fileMerge.png</file>
+    <file>icon/link.png</file>
     <file>icon/lock.png</file>
     <file>icon/MM32_Logo.ico</file>
+    <file>icon/MMLinkConfig.png</file>
     <file>icon/noChip.png</file>
-    <file>icon/program.png</file>
     <file>icon/option.png</file>
-    <file>icon/sector.png</file>
+    <file>icon/program.png</file>
     <file>icon/programmer.png</file>
     <file>icon/project.png</file>
+    <file>icon/read.png</file>
+    <file>icon/reload.png</file>
+    <file>icon/sector.png</file>
+    <file>icon/sequence.png</file>
+    <file>icon/startApp.png</file>
     <file>icon/unlock.png</file>
+    <file>icon/upgrade.png</file>
+    <file>icon/write.png</file>
   </qresource>
 </RCC>
