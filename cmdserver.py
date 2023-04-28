@@ -139,6 +139,7 @@ def openServer(port):
                 else:
                     info = ("INFO: Please input Json Format String")
                 conn.send(bytes(info+'\r\n', encoding='utf-8'))
+                # slog_print(info)
             except Exception as e:
                 slog_print("ERROR: Client TCP Connection Failed. Message:%s" % (str(e)))
                 break
@@ -151,18 +152,18 @@ if __name__ == "__main__":
 
 
 '''
-{"command": "devicelist"}
-{"command": "scanTarget", "index": 0, "speed": 5000000}
-{"command": "connectDevice", "index": 0, "speed": 5000000, "mcu": "MM32F0010"}
-{"command": "readMemory", "index": 0, "speed": 5000000, "mcu": "MM32F0010", "address": 0, "length": 10}
-{"command": "writeMemory", "index": 0, "speed": 5000000, "mcu": "MM32F0010", "address":0, "data": [1, 2]}
-{"command": "earseChip", "index": 0, "speed": 5000000, "mcu": "MM32F0010"}
-{"command": "earseSector", "index": 0, "speed": 5000000, "mcu": "MM32F0010", "address": 0,"length":32768}
-{"command": "readMem32", "index": 0, "speed": 5000000, "mcu": "MM32F0010", "address": 536868864, "length": 8}
-{"command": "writeMem32", "index": 0, "speed": 5000000, "mcu": "MM32F0010", "address": 1073881092, "data": [1164378403]}
-{"command": "optEarse","index": 0, "speed": 5000000, "mcu": "MM32F0010", "address": 536868864}
-{"command": "optWrite", "index": 0, "speed": 5000000, "mcu": "MM32F0010", "address": 536868866, "data": [90]}
-{"command": "reEarseF0010", "index": 0}
-{"command": "resetTarget", "index": 0, "rstType": 0}
-{"command": "releaseDevice", "index": 0}
+{"command":"devicelist"}
+{"command":"scanTarget","index":0}
+{"command":"connectDevice","index":0,"speed":5000000,"mcu":"MM32F0010"}
+{"command":"readMemory","address":0,"length":10}
+{"command":"writeMemory","address":0,"data":[1,2]}
+{"command":"earseChip"}
+{"command":"earseSector","address":0,"length":32768}
+{"command":"readMem32","address":536868840,"length":12}
+{"command":"writeMem32","address":1073881092,"data":[1164378403]}
+{"command":"optEarse","address":536868864}
+{"command":"optWrite","address":536868866,"data":[90]}
+{"command":"reEarseF0010"}
+{"command":"resetTarget","rstType":0}
+{"command":"releaseDevice"}
 '''

@@ -1,18 +1,27 @@
 import collections
 
 from . import MM32
-from . import MM32F003
-from . import MM32F103
 from . import MM32A0140
+from . import MM32F003
 from . import MM32F0010
 from . import MM32F0020
+from . import MM32F0040
+from . import MM32F103
 from . import MM32F0130
 from . import MM32F0160
 from . import MM32F0270
-from . import MM32F0040
 from . import MM32F3270
+from . import MM32F5230
 from . import MM32F5270
+from . import MM32F5280
+from . import MM32F5330
+from . import MM32G0001
+from . import MM32G0140
+from . import MM32G0160
+from . import MM32G5330
 from . import MM32L0020
+from . import MM32L0130
+from . import MM32SPIN0230
 
 Devices = collections.OrderedDict([
     # Old Chip
@@ -31,19 +40,21 @@ Devices = collections.OrderedDict([
     ('MM32F0160',    MM32F0160.MM32F0160),
     ('MM32F0270',    MM32F0270.MM32F0270),
     ('MM32F3270',    MM32F3270.MM32F3270),
+    ('MM32F5230',    MM32F5230.MM32F5230),
     ('MM32F5270',    MM32F5270.MM32F5270),
-    ('MM32F5280',    MM32F5270.MM32F5270),
-    ('MM32F5330',    MM32F5270.MM32F5270),
-    ('MM32G0140',    MM32F0040.MM32F0140),
-    ('MM32G0160',    MM32F0040.MM32F0140),
-    ('MM32G5330',    MM32F5270.MM32F5270),
+    ('MM32F5280',    MM32F5280.MM32F5280),
+    ('MM32F5330',    MM32F5330.MM32F5330),
+    ('MM32G0001',    MM32G0001.MM32G0001),
+    ('MM32G0140',    MM32G0140.MM32G0140),
+    ('MM32G0160',    MM32G0160.MM32G0160),
+    ('MM32G5330',    MM32G5330.MM32G5330),
     ('MM32L0020',    MM32L0020.MM32L0020),
-    ('MM32L0130',    MM32F0040.MM32F0140),
+    ('MM32L0130',    MM32L0130.MM32L0130),
     # SPIN Special
     ('MM32SPIN05',   MM32F0040.MM32F0140),
     ('MM32SPIN06',   MM32F0040.MM32F0140),
     ('MM32SPIN07',   MM32F0040.MM32F0140),
-    ('MM32SPIN0230', MM32F0040.MM32F0140),
+    ('MM32SPIN0230', MM32SPIN0230.MM32SPIN0230),
     ('MM32SPIN0280', MM32F0040.MM32F0140),
     ('MM32SPIN2x',   MM32F0040.MM32F0140),
     # Pre-DRV

@@ -449,6 +449,26 @@ class DebugPort(object):
         self.link.connect()
         self.link.swj_sequence()
 
+        ########################################################################
+        # for _ in range(2):
+        #     try:
+        #         self.read_id_code()
+        #     except exceptions.TransferError:
+        #         pass
+
+        # if not self.dpidr:
+        #     for _ in range(2):
+        #         self.set_reset_pin_low()
+        #         self.link.swj_sequence()
+        #         self.sim_halt()
+        #         try:
+        #             self.read_id_code()
+        #         except exceptions.TransferError:
+        #             pass
+        #         if self.dpidr:
+        #             break
+
+        ########################################################################
         try:
             self.read_id_code()
         except exceptions.TransferError:
@@ -466,6 +486,7 @@ class DebugPort(object):
             self.link.swj_sequence()
             self.sim_halt()
             self.read_id_code()
+        ########################################################################
             
         self.clear_sticky_err()
 
