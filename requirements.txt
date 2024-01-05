@@ -7,7 +7,7 @@ intelhex==2.3.0
 intervaltree==3.1.0
 Jinja2==3.1.2
 psutil==5.9.0
-pycryptodome==3.17
+pycryptodome==3.19.1
 pyelftools==0.29
 PyQt5==5.15.9
 pyusb==1.2.1
